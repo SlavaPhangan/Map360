@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phangan 360 - Premium View</title>
+    <title>Phangan 360 - Palm Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <style>
@@ -12,41 +12,44 @@
         
         #main-container { display: flex; height: 100vh; width: 100vw; transition: all 0.4s ease; }
         
-        /* ДЕСКТОП (MacBook 14") */
+        /* Адаптив под MacBook и iPhone */
         @media (min-width: 1024px) {
             #main-container { flex-direction: row; }
-            #map { width: 30% !important; height: 100% !important; border-right: 1px solid #222; border-top: none; }
+            #map { width: 30% !important; height: 100% !important; border-right: 1px solid #222; }
             #panorama-container { width: 70% !important; height: 100% !important; }
-            .admin-btn { bottom: 20px; left: 20px; top: auto; }
         }
-
-        /* МОБИЛКА (iPhone 13 Pro) */
         @media (max-width: 1023px) {
             #main-container { flex-direction: column-reverse; }
-            #map { width: 100%; height: 35%; border-top: 1px solid #333; transition: height 0.4s ease; }
-            #panorama-container { width: 100%; height: 65%; position: relative; transition: height 0.4s ease; }
-            
-            .map-full #map { height: 80%; }
-            .map-full #panorama-container { height: 20%; }
+            #map { width: 100%; height: 35%; border-top: 1px solid #333; }
+            #panorama-container { width: 100%; height: 65%; position: relative; }
+            .map-full #map { height: 85%; }
+            .map-full #panorama-container { height: 15%; }
             .pano-full #map { height: 10%; }
             .pano-full #panorama-container { height: 90%; }
-            .admin-btn { top: 15px; left: 15px; }
         }
 
         #panorama { width: 100%; height: 100%; background: #050505; }
-        .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
+        .leaflet-control-attribution { display: none !important; }
         
-        /* UI Элементы */
-        .admin-btn { position: absolute; z-index: 1000; background: rgba(30,30,30,0.8); color: white; border: 1px solid #444; padding: 12px 20px; border-radius: 12px; font-weight: 600; backdrop-filter: blur(10px); }
+        /* Кнопки управления */
+        .ui-controls { position: absolute; top: 15px; left: 15px; z-index: 2000; display: flex; gap: 10px; }
+        .btn-ui { background: rgba(30,30,30,0.9); color: white; border: 1px solid #444; padding: 12px 18px; border-radius: 12px; font-weight: 600; backdrop-filter: blur(10px); cursor: pointer; }
         
-        #insta-link { position: absolute; top: 20px; right: 20px; z-index: 1000; background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); color: white; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: bold; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.3); animation: fadeIn 1s; }
+        /* Анимация Пальмы */
+        #upload-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .palm-container { position: relative; width: 100px; height: 120px; }
+        .palm-icon { font-size: 80px; filter: grayscale(1); position: relative; z-index: 2; }
+        .palm-fill { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: #34c759; mix-blend-mode: color; transition: height 0.1s linear; z-index: 1; }
+        #coconut { position: absolute; top: -50px; left: 35px; font-size: 30px; display: none; }
+        
+        @keyframes coconutFall {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(150px) rotate(360deg); }
+        }
 
-        #info-card { position: absolute; bottom: 30px; left: 30px; z-index: 1000; background: rgba(15,15,15,0.8); padding: 20px; border-radius: 16px; border: 1px solid #333; backdrop-filter: blur(15px); pointer-events: none; max-width: 300px; }
-
-        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 50px 30px; }
-        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 15px; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Админка */
+        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; }
+        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body class="pano-full">
@@ -55,23 +58,31 @@
     <div id="map" onclick="handleMapClick()"></div>
     <div id="panorama-container" onclick="handlePanoClick()">
         <div id="panorama"></div>
-        <button class="admin-btn" onclick="event.stopPropagation(); openAdmin()">+ Добавить</button>
-        <a id="insta-link" href="https://www.instagram.com/slavalagoykin/" target="_blank">Instagram</a>
         
-        <div id="info-card" id="card" style="display:none">
-            <div style="font-weight: 700; font-size: 20px; color: var(--accent);" id="card-title"></div>
-            <div id="card-desc" style="color:#aaa; font-size:14px; margin-top:5px;"></div>
+        <div class="ui-controls">
+            <button class="btn-ui" onclick="event.stopPropagation(); openAdmin()">+ Добавить</button>
         </div>
+
+        <a id="insta-link" href="https://www.instagram.com/slavalagoykin/" target="_blank" style="position: absolute; top: 20px; right: 20px; z-index: 1000; display: none;">Instagram</a>
     </div>
 </div>
 
+<div id="upload-overlay">
+    <div class="palm-container">
+        <div id="coconut">🥥</div>
+        <div class="palm-icon">🌴</div>
+        <div id="palm-fill" class="palm-fill"></div>
+    </div>
+    <div id="progress-text" style="margin-top: 20px; font-weight: bold; color: #34c759;">0%</div>
+</div>
+
 <div id="admin-panel">
-    <h2 style="margin-top:0">Новый объект 360°</h2>
-    <input type="text" id="in-name" placeholder="Название">
-    <input type="text" id="in-desc" placeholder="Описание">
+    <h2 style="margin-top:0">Новая 360° локация</h2>
+    <input type="text" id="in-name" placeholder="Название виллы или пляжа">
+    <input type="text" id="in-desc" placeholder="Краткое описание">
     <input type="file" id="in-file" accept="image/*">
-    <button style="background:var(--accent); color:white; border:none; padding:20px; border-radius:14px; font-weight:700; font-size:16px;" onclick="savePoint()">ОПУБЛИКОВАТЬ</button>
-    <button style="background:none; color:#555; border:none; margin-top:20px;" onclick="closeAdmin()">ОТМЕНА</button>
+    <button class="btn-ui" style="background:var(--accent); border:none; width:100%; padding:20px;" onclick="savePoint()">ОПУБЛИКОВАТЬ</button>
+    <button class="btn-ui" style="background:none; border:none; width:100%; margin-top:10px; color:#555;" onclick="closeAdmin()">ОТМЕНА</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -81,22 +92,19 @@
     let map, viewer, clickCoords = null;
     const SUNSET_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/sign/360%20-10/sunset%20Thong%20Sala.JPG?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83NWRlMzdkZC03OTI4LTQ1MjEtYjFhNS0xOTUxY2I0N2QxN2IiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiIzNjAgLTEwL3N1bnNldCBUaG9uZyBTYWxhLkpQRyIsImlhdCI6MTc3NzEyOTA3NCwiZXhwIjoxODA4NjY1MDc0fQ.8pY65AdSogP0twllPXJ_30lWR7KcPP9zV6IAqKQz79Q";
     
-    let data = JSON.parse(localStorage.getItem('ph_v13') || '[]');
+    let data = JSON.parse(localStorage.getItem('ph_v15') || '[]');
 
     function init() {
-        // КАРТА: CartoDB Voyager (Чистая, светлая, в стиле Apple/Google)
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
-        // Добавляем только важные подписи дорог и мест
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png').addTo(map);
 
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true, "hfov": 110 });
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true });
 
-        drawMarker({name:'Thong Sala Sunset', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG, desc:'Original Drone Shot'});
+        drawMarker({name:'Thong Sala Sunset', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG});
         data.forEach(p => drawMarker(p));
 
         map.on('click', e => { clickCoords = e.latlng; });
-
         setTimeout(() => { document.getElementById('insta-link').style.display = 'block'; }, 180000);
     }
 
@@ -106,29 +114,15 @@
             L.DomEvent.stopPropagation(e);
             viewer.destroy();
             viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.img, "autoLoad": true });
-            document.getElementById('info-card').style.display = 'block';
-            document.getElementById('card-title').innerText = p.name;
-            document.getElementById('card-desc').innerText = p.desc || "";
             if (window.innerWidth < 1024) handlePanoClick();
         });
     }
 
-    function handleMapClick() {
-        if (window.innerWidth < 1024) {
-            document.body.className = 'map-full';
-            setTimeout(() => map.invalidateSize(), 400);
-        }
-    }
-
-    function handlePanoClick() {
-        if (window.innerWidth < 1024) {
-            document.body.className = 'pano-full';
-            setTimeout(() => map.invalidateSize(), 400);
-        }
-    }
-
+    function handleMapClick() { if (window.innerWidth < 1024) document.body.className = 'map-full'; setTimeout(() => map.invalidateSize(), 400); }
+    function handlePanoClick() { if (window.innerWidth < 1024) document.body.className = 'pano-full'; setTimeout(() => map.invalidateSize(), 400); }
+    
     function openAdmin() {
-        if(!clickCoords) return alert("Сначала нажми на точку на карте!");
+        if(!clickCoords) return alert("Сначала нажми на карту!");
         document.getElementById('admin-panel').style.display = 'flex';
     }
 
@@ -137,15 +131,34 @@
     function savePoint() {
         const name = document.getElementById('in-name').value;
         const file = document.getElementById('in-file').files[0];
-        if(!name || !file) return alert("Данные не заполнены");
+        if(!name || !file) return alert("Заполни данные");
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            data.push({ name, desc: document.getElementById('in-desc').value, coords: clickCoords, img: e.target.result });
-            localStorage.setItem('ph_v13', JSON.stringify(data));
-            location.reload();
-        };
-        reader.readAsDataURL(file);
+        document.getElementById('upload-overlay').style.display = 'flex';
+        let progress = 0;
+        const fill = document.getElementById('palm-fill');
+        const text = document.getElementById('progress-text');
+
+        const interval = setInterval(() => {
+            progress += 2;
+            fill.style.height = progress + '%';
+            text.innerText = progress + '%';
+            if(progress >= 100) {
+                clearInterval(interval);
+                const coco = document.getElementById('coconut');
+                coco.style.display = 'block';
+                coco.style.animation = 'coconutFall 0.8s forwards';
+                
+                setTimeout(() => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        data.push({ name, desc: document.getElementById('in-desc').value, coords: clickCoords, img: e.target.result });
+                        localStorage.setItem('ph_v15', JSON.stringify(data));
+                        location.reload();
+                    };
+                    reader.readAsDataURL(file);
+                }, 1000);
+            }
+        }, 50);
     }
 
     init();
