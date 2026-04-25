@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phangan 360</title>
+    <title>Phangan 360 PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <style>
@@ -14,17 +14,20 @@
         #panorama { width: 100%; height: 100%; }
         .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
         
-        /* Скрытая кнопка добавления */
+        /* Кнопка админа */
         .controls { position: absolute; top: 15px; right: 15px; z-index: 1000; display: none; }
-        .btn { background: #007aff; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; }
+        .btn { background: #007aff; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; }
         
-        #info-card { position: absolute; bottom: 15px; left: 15px; right: 15px; z-index: 1000; background: rgba(20,20,20,0.9); padding: 15px; border-radius: 15px; border: 1px solid #333; backdrop-filter: blur(10px); display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .price { color: #34c759; font-weight: bold; font-size: 17px; }
-        .btn-wa { background: #25d366; color: white; text-decoration: none; padding: 12px; border-radius: 10px; display: block; text-align: center; font-weight: bold; margin-top: 12px; font-size: 14px; }
+        /* Карточка объекта */
+        #info-card { position: absolute; bottom: 15px; left: 15px; right: 15px; z-index: 1000; background: rgba(20,20,20,0.9); padding: 15px; border-radius: 18px; border: 1px solid #333; backdrop-filter: blur(10px); display: none; }
+        .price { color: #34c759; font-weight: bold; font-size: 18px; }
+        .btn-wa { background: #25d366; color: white; text-decoration: none; padding: 12px; border-radius: 10px; display: block; text-align: center; font-weight: bold; margin-top: 10px; }
 
-        #admin-panel { position: absolute; bottom: -100%; left: 0; width: 100%; background: #1c1c1e; z-index: 2000; border-radius: 20px 20px 0 0; transition: 0.3s; padding: 20px; box-sizing: border-box; border-top: 1px solid #333; }
-        #admin-panel.active { bottom: 0; }
-        input { background: #2c2c2e; border: 1px solid #3d3d3f; color: white; padding: 14px; border-radius: 10px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        /* Понятная Админка */
+        #admin-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1c1c1e; z-index: 3000; display: none; flex-direction: column; padding: 30px 20px; box-sizing: border-box; }
+        .step-label { color: #007aff; font-weight: bold; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; display: block; }
+        input { background: #2c2c2e; border: 1px solid #3d3d3f; color: white; padding: 15px; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+        .loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:4000; }
     </style>
 </head>
 <body>
@@ -34,56 +37,72 @@
     <div id="panorama-container">
         <div id="panorama"></div>
         <div class="controls" id="admin-btn-wrap">
-            <button class="btn" id="add-btn">+ Локация</button>
+            <button class="btn" id="add-btn">+ Добавить объект</button>
         </div>
-        
         <div id="info-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 id="card-title" style="margin:0; font-size: 17px;" onclick="secretClick()"></h3>
+                <h3 id="card-title" style="margin:0; font-size: 18px;" onclick="secretClick()"></h3>
                 <div class="price" id="card-price"></div>
             </div>
-            <div id="card-desc" style="font-size: 12px; color: #aaa; margin-top: 5px;"></div>
-            <a id="wa-link" href="#" class="btn-wa" target="_blank">WhatsApp владельца</a>
+            <div id="card-desc" style="font-size: 13px; color: #aaa; margin-top: 5px;"></div>
+            <a id="wa-link" href="#" class="btn-wa" target="_blank">Связаться в WhatsApp</a>
         </div>
     </div>
 </div>
 
 <div id="admin-panel">
-    <input type="text" id="in-name" placeholder="Название">
-    <input type="text" id="in-price" placeholder="Цена">
-    <input type="text" id="in-desc" placeholder="Описание">
-    <input type="text" id="in-wa" placeholder="WhatsApp (7999...)">
-    <div id="file-box"><input type="file" id="in-file" accept="image/*"></div>
+    <h2 style="margin-top:0">Новая точка</h2>
+    
+    <span class="step-label">Шаг 1: Информация</span>
+    <input type="text" id="in-name" placeholder="Название (напр. Sunset Villa)">
+    <input type="text" id="in-price" placeholder="Цена (напр. 3000 THB)">
+    <input type="text" id="in-wa" placeholder="WhatsApp (79991234567)">
+    
+    <span class="step-label">Шаг 2: Описание</span>
+    <input type="text" id="in-desc" placeholder="Коротко о месте">
+    
+    <span class="step-label">Шаг 3: Фото 360</span>
+    <input type="file" id="in-file" accept="image/*">
+    
     <input type="hidden" id="in-coords">
-    <button class="btn" style="width:100%; padding: 15px; margin-top:10px;" onclick="handleSave()">Сохранить</button>
-    <button class="btn" style="width:100%; margin-top:8px; background:none;" onclick="setPanel(false)">Отмена</button>
+    
+    <button class="btn" style="width:100%; padding: 18px; margin-top:20px; background:#34c759;" onclick="handleSave()">СОХРАНИТЬ И ОПУБЛИКОВАТЬ</button>
+    <button class="btn" style="width:100%; margin-top:10px; background:none; border:1px solid #444;" onclick="closeAdmin()">ОТМЕНА</button>
+
+    <div class="loading-overlay" id="loader">
+        <div style="font-size: 20px; margin-bottom:10px;">⏳</div>
+        <div>Оптимизация 360°...</div>
+    </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
-    let map, viewer, isAdd = false;
+    let map, viewer, isAddMode = false;
     let viewedPoints = new Set();
     let secretCounter = 0;
-    let data = JSON.parse(localStorage.getItem('ph_v10') || '[]');
+    
+    // ТВОЯ КАРТИНКА ИЗ SUPABASE
+    const SUNSET_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/sign/360%20-10/sunset%20Thong%20Sala.JPG?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83NWRlMzdkZC03OTI4LTQ1MjEtYjFhNS0xOTUxY2I0N2QxN2IiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiIzNjAgLTEwL3N1bnNldCBUaG9uZyBTYWxhLkpQRyIsImlhdCI6MTc3NzEyOTA3NCwiZXhwIjoxODA4NjY1MDc0fQ.8pY65AdSogP0twllPXJ_30lWR7KcPP9zV6IAqKQz79Q";
 
-    const DEMO_IMG = "https://pannellum.org/images/alma.jpg"; 
+    let data = JSON.parse(localStorage.getItem('ph_v11') || '[]');
 
     function init() {
-        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.73, 100.01], 12);
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": DEMO_IMG, "autoLoad": true, "showZoomCtrl": false });
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true, "showZoomCtrl": false });
 
-        drawMarker({id:'demo', name:'Welcome Phangan', coords:{lat:9.71, lng:99.98}, img:DEMO_IMG, desc:'Посмотрите 3 любые точки, чтобы открыть меню добавления.'});
+        // Первая главная точка (Sunset)
+        drawMarker({id:'main', name:'Thong Sala Sunset', price:'Portfolio', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG, desc:'Твое первое профессиональное фото на карте.'});
+        
         data.forEach(p => drawMarker(p));
 
         map.on('click', e => {
-            if(!isAdd) return;
+            if(!isAddMode) return;
             document.getElementById('in-coords').value = JSON.stringify(e.latlng);
-            document.getElementById('file-box').style.display = 'block';
-            setPanel(true);
+            document.getElementById('admin-panel').style.display = 'flex';
         });
     }
 
@@ -93,17 +112,15 @@
             viewer.destroy();
             viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.img, "autoLoad": true });
             
-            // Логика счетчика просмотров
             viewedPoints.add(p.id || p.name);
-            if(viewedPoints.size >= 3) {
-                document.getElementById('admin-btn-wrap').style.display = 'block';
-            }
+            if(viewedPoints.size >= 3) document.getElementById('admin-btn-wrap').style.display = 'block';
 
-            document.getElementById('info-card').style.display = 'block';
+            const card = document.getElementById('info-card');
+            card.style.display = 'block';
             document.getElementById('card-title').innerText = p.name;
             document.getElementById('card-price').innerText = p.price || "";
             document.getElementById('card-desc').innerText = p.desc || "";
-            document.getElementById('wa-link').href = "https://wa.me/" + (p.wa || "");
+            document.getElementById('wa-link').href = "https://wa.me/" + (p.wa || "79991234567");
         });
     }
 
@@ -111,39 +128,57 @@
         secretCounter++;
         if(secretCounter >= 5) {
             document.getElementById('admin-btn-wrap').style.display = 'block';
-            alert("Меню админа открыто!");
+            alert("Админ-режим активирован");
         }
     }
 
     document.getElementById('add-btn').onclick = () => {
-        isAdd = !isAdd;
-        document.getElementById('add-btn').innerText = isAdd ? "Ткни на карту" : "+ Локация";
+        isAddMode = !isAddMode;
+        document.getElementById('add-btn').innerText = isAddMode ? "Ткни в место на карте" : "+ Добавить объект";
+        document.getElementById('add-btn').style.background = isAddMode ? "#ff3b30" : "#007aff";
     };
 
-    function setPanel(s) { document.getElementById('admin-panel').classList.toggle('active', s); }
+    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; isAddMode = false; }
 
     function handleSave() {
         const name = document.getElementById('in-name').value;
         const file = document.getElementById('in-file').files[0];
-        const coords = JSON.parse(document.getElementById('in-coords').value);
+        const coords = document.getElementById('in-coords').value;
 
-        if(!name || (!file && document.getElementById('file-box').style.display !== 'none')) return alert("Данные не полные");
+        if(!name || !file || !coords) return alert("Заполни всё: имя, фото и выбери место на карте!");
+
+        document.getElementById('loader').style.display = 'flex';
 
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = 2048; canvas.height = 1024;
-                canvas.getContext('2d').drawImage(img, 0, 0, 2048, 1024);
-                const compressed = canvas.toDataURL('image/jpeg', 0.6);
-                data.push({ name, price:document.getElementById('in-price').value, desc:document.getElementById('in-desc').value, wa:document.getElementById('in-wa').value, coords, img: compressed, id: Date.now() });
-                localStorage.setItem('ph_v10', JSON.stringify(data));
+                // ОПТИМАЛЬНЫЙ РАЗМЕР ДЛЯ 360
+                canvas.width = 2048; 
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 2048, 1024);
+                
+                // КОНВЕРТАЦИЯ И СЖАТИЕ (0.6 - отличное качество при малом весе)
+                const optimizedImg = canvas.toDataURL('image/jpeg', 0.6);
+                
+                data.push({
+                    id: Date.now(),
+                    name: name,
+                    price: document.getElementById('in-price').value,
+                    wa: document.getElementById('in-wa').value,
+                    desc: document.getElementById('in-desc').value,
+                    coords: JSON.parse(coords),
+                    img: optimizedImg
+                });
+
+                localStorage.setItem('ph_v11', JSON.stringify(data));
                 location.reload();
             };
             img.src = e.target.result;
         };
-        if(file) reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
     }
 
     init();
