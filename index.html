@@ -3,94 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phangan 360 - High Quality</title>
+    <title>Phangan 360 - Premium View</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; background: #000; color: #fff; overflow: hidden; }
+        :root { --accent: #007aff; }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; background: #000; color: #fff; overflow: hidden; }
         
-        /* Динамические размеры блоков */
-        #main-container { display: flex; flex: 1; flex-direction: column-reverse; transition: all 0.4s ease; }
+        #main-container { display: flex; height: 100vh; width: 100vw; transition: all 0.4s ease; }
         
-        #map { width: 100%; height: 40%; border-top: 1px solid #333; transition: height 0.4s ease; }
-        #panorama-container { width: 100%; height: 60%; position: relative; transition: height 0.4s ease; }
-        
-        /* Состояния развертывания */
-        .map-full #map { height: 85%; }
-        .map-full #panorama-container { height: 15%; }
-        .pano-full #map { height: 10%; }
-        .pano-full #panorama-container { height: 90%; }
+        /* ДЕСКТОП (MacBook 14") */
+        @media (min-width: 1024px) {
+            #main-container { flex-direction: row; }
+            #map { width: 30% !important; height: 100% !important; border-right: 1px solid #222; border-top: none; }
+            #panorama-container { width: 70% !important; height: 100% !important; }
+            .admin-btn { bottom: 20px; left: 20px; top: auto; }
+        }
 
-        #panorama { width: 100%; height: 100%; }
+        /* МОБИЛКА (iPhone 13 Pro) */
+        @media (max-width: 1023px) {
+            #main-container { flex-direction: column-reverse; }
+            #map { width: 100%; height: 35%; border-top: 1px solid #333; transition: height 0.4s ease; }
+            #panorama-container { width: 100%; height: 65%; position: relative; transition: height 0.4s ease; }
+            
+            .map-full #map { height: 80%; }
+            .map-full #panorama-container { height: 20%; }
+            .pano-full #map { height: 10%; }
+            .pano-full #panorama-container { height: 90%; }
+            .admin-btn { top: 15px; left: 15px; }
+        }
+
+        #panorama { width: 100%; height: 100%; background: #050505; }
         .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
         
-        /* Кнопки */
-        .admin-btn { position: absolute; top: 15px; left: 15px; z-index: 1000; background: rgba(0,0,0,0.6); color: white; border: 1px solid #444; padding: 10px 15px; border-radius: 8px; font-size: 12px; }
+        /* UI Элементы */
+        .admin-btn { position: absolute; z-index: 1000; background: rgba(30,30,30,0.8); color: white; border: 1px solid #444; padding: 12px 20px; border-radius: 12px; font-weight: 600; backdrop-filter: blur(10px); }
         
-        #insta-link { position: absolute; top: 15px; right: 15px; z-index: 1000; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; padding: 12px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 14px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: fadeIn 1s forwards; }
+        #insta-link { position: absolute; top: 20px; right: 20px; z-index: 1000; background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); color: white; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: bold; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.3); animation: fadeIn 1s; }
 
-        /* Карточка данных */
-        #info-card { position: absolute; bottom: 20px; left: 20px; z-index: 1000; background: rgba(20,20,20,0.8); padding: 15px; border-radius: 12px; border: 1px solid #333; backdrop-filter: blur(5px); pointer-events: none; }
+        #info-card { position: absolute; bottom: 30px; left: 30px; z-index: 1000; background: rgba(15,15,15,0.8); padding: 20px; border-radius: 16px; border: 1px solid #333; backdrop-filter: blur(15px); pointer-events: none; max-width: 300px; }
 
-        /* Полноэкранная админка */
-        #admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 5000; display: none; flex-direction: column; padding: 40px 20px; box-sizing: border-box; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; font-size: 16px; margin-bottom: 15px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 50px 30px; }
+        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 15px; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="pano-full">
 
 <div id="main-container">
-    <div id="map" onclick="expandMap()"></div>
-    <div id="panorama-container" onclick="expandPano()">
+    <div id="map" onclick="handleMapClick()"></div>
+    <div id="panorama-container" onclick="handlePanoClick()">
         <div id="panorama"></div>
-        <button class="admin-btn" onclick="event.stopPropagation(); openAdmin()">+ Точка</button>
-        <a id="insta-link" href="https://instagram.com/slavaphangan" target="_blank">Instagram Portfolio</a>
+        <button class="admin-btn" onclick="event.stopPropagation(); openAdmin()">+ Добавить</button>
+        <a id="insta-link" href="https://www.instagram.com/slavalagoykin/" target="_blank">Instagram</a>
         
         <div id="info-card" id="card" style="display:none">
-            <b id="card-title" style="font-size:18px"></b><br>
-            <span id="card-desc" style="color:#aaa; font-size:13px"></span>
+            <div style="font-weight: 700; font-size: 20px; color: var(--accent);" id="card-title"></div>
+            <div id="card-desc" style="color:#aaa; font-size:14px; margin-top:5px;"></div>
         </div>
     </div>
 </div>
 
 <div id="admin-panel">
-    <h2 style="margin-top:0">Добавить 360° точку</h2>
-    <input type="text" id="in-name" placeholder="Название объекта">
+    <h2 style="margin-top:0">Новый объект 360°</h2>
+    <input type="text" id="in-name" placeholder="Название">
     <input type="text" id="in-desc" placeholder="Описание">
     <input type="file" id="in-file" accept="image/*">
-    <p style="font-size: 11px; color: #888;">* Сохранение займет время, так как файл не сжимается.</p>
-    <button style="background:#007aff; color:white; border:none; padding:18px; border-radius:12px; font-weight:bold;" onclick="savePoint()">ОПУБЛИКОВАТЬ</button>
-    <button style="background:none; color:#888; border:none; margin-top:15px;" onclick="closeAdmin()">ОТМЕНА</button>
+    <button style="background:var(--accent); color:white; border:none; padding:20px; border-radius:14px; font-weight:700; font-size:16px;" onclick="savePoint()">ОПУБЛИКОВАТЬ</button>
+    <button style="background:none; color:#555; border:none; margin-top:20px;" onclick="closeAdmin()">ОТМЕНА</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
-    let map, viewer;
+    let map, viewer, clickCoords = null;
     const SUNSET_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/sign/360%20-10/sunset%20Thong%20Sala.JPG?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83NWRlMzdkZC03OTI4LTQ1MjEtYjFhNS0xOTUxY2I0N2QxN2IiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiIzNjAgLTEwL3N1bnNldCBUaG9uZyBTYWxhLkpQRyIsImlhdCI6MTc3NzEyOTA3NCwiZXhwIjoxODA4NjY1MDc0fQ.8pY65AdSogP0twllPXJ_30lWR7KcPP9zV6IAqKQz79Q";
     
-    let data = JSON.parse(localStorage.getItem('ph_v12') || '[]');
-    let clickCoords = null;
+    let data = JSON.parse(localStorage.getItem('ph_v13') || '[]');
 
     function init() {
+        // КАРТА: CartoDB Voyager (Чистая, светлая, в стиле Apple/Google)
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+        // Добавляем только важные подписи дорог и мест
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png').addTo(map);
 
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true, "showZoomCtrl": true });
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true, "hfov": 110 });
 
-        // Основная точка
-        drawMarker({name:'Thong Sala Sunset', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG, desc:'Original Quality Demo'});
+        drawMarker({name:'Thong Sala Sunset', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG, desc:'Original Drone Shot'});
         data.forEach(p => drawMarker(p));
 
         map.on('click', e => { clickCoords = e.latlng; });
 
-        // Таймер на Instagram (180 секунд = 3 минуты)
-        setTimeout(() => {
-            document.getElementById('insta-link').style.display = 'block';
-        }, 180000);
+        setTimeout(() => { document.getElementById('insta-link').style.display = 'block'; }, 180000);
     }
 
     function drawMarker(p) {
@@ -102,22 +109,26 @@
             document.getElementById('info-card').style.display = 'block';
             document.getElementById('card-title').innerText = p.name;
             document.getElementById('card-desc').innerText = p.desc || "";
-            expandPano();
+            if (window.innerWidth < 1024) handlePanoClick();
         });
     }
 
-    function expandMap() {
-        document.body.className = 'map-full';
-        setTimeout(() => map.invalidateSize(), 400);
+    function handleMapClick() {
+        if (window.innerWidth < 1024) {
+            document.body.className = 'map-full';
+            setTimeout(() => map.invalidateSize(), 400);
+        }
     }
 
-    function expandPano() {
-        document.body.className = 'pano-full';
-        setTimeout(() => map.invalidateSize(), 400);
+    function handlePanoClick() {
+        if (window.innerWidth < 1024) {
+            document.body.className = 'pano-full';
+            setTimeout(() => map.invalidateSize(), 400);
+        }
     }
 
     function openAdmin() {
-        if(!clickCoords) return alert("Сначала нажми на карту, чтобы выбрать место!");
+        if(!clickCoords) return alert("Сначала нажми на точку на карте!");
         document.getElementById('admin-panel').style.display = 'flex';
     }
 
@@ -126,18 +137,12 @@
     function savePoint() {
         const name = document.getElementById('in-name').value;
         const file = document.getElementById('in-file').files[0];
-        if(!name || !file) return alert("Нужны название и файл!");
+        if(!name || !file) return alert("Данные не заполнены");
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            // Сохраняем "как есть" (максимальное качество)
-            data.push({
-                name: name,
-                desc: document.getElementById('in-desc').value,
-                coords: clickCoords,
-                img: e.target.result // Исходный Base64 без сжатия
-            });
-            localStorage.setItem('ph_v12', JSON.stringify(data));
+            data.push({ name, desc: document.getElementById('in-desc').value, coords: clickCoords, img: e.target.result });
+            localStorage.setItem('ph_v13', JSON.stringify(data));
             location.reload();
         };
         reader.readAsDataURL(file);
