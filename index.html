@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phangan 360 - Business</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; background: #000; color: #fff; }
+        #main-container { display: flex; flex: 1; flex-direction: column-reverse; overflow: hidden; }
+        #map { width: 100%; height: 35%; border-top: 1px solid #333; }
+        #panorama-container { width: 100%; height: 65%; position: relative; background: #050505; }
+        #panorama { width: 100%; height: 100%; }
+        .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
+        
+        /* Кнопки управления */
+        .controls { position: absolute; top: 15px; right: 15px; z-index: 1000; }
+        .btn { background: #007aff; color: white; border: none; padding: 12px 18px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        /* Карточка объекта */
+        #info-card { position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 1000; background: rgba(28,28,30,0.95); padding: 15px; border-radius: 16px; border: 1px solid #444; backdrop-filter: blur(10px); display: none; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .price { color: #34c759; font-weight: bold; font-size: 18px; }
+        .btn-wa { background: #25d366; color: white; text-decoration: none; padding: 10px; border-radius: 8px; display: block; text-align: center; font-weight: bold; margin-top: 10px; }
+
+        /* Админ-панель */
+        #admin-panel { position: absolute; bottom: -100%; left: 0; width: 100%; background: #1c1c1e; z-index: 2000; border-radius: 20px 20px 0 0; transition: 0.3s; padding: 25px; box-sizing: border-box; border-top: 1px solid #333; }
+        #admin-panel.active { bottom: 0; }
+        input { background: #2c2c2e; border: 1px solid #3d3d3f; color: white; padding: 14px; border-radius: 10px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+<div id="main-container">
+    <div id="map"></div>
+    <div id="panorama-container">
+        <div id="panorama"></div>
+        <div class="controls">
+            <button class="btn" id="add-btn">+ Точка</button>
+        </div>
+        
+        <div id="info-card">
+            <div class="card-header">
+                <h3 id="card-title" style="margin:0; font-size: 18px;"></h3>
+                <div class="price" id="card-price"></div>
+            </div>
+            <div id="card-desc" style="font-size: 13px; color: #aaa;"></div>
+            <a id="wa-link" href="#" class="btn-wa" target="_blank">Забронировать в WhatsApp</a>
+            <div style="text-align: center; margin-top: 8px;">
+                <span id="edit-trigger" style="color: #ff9500; font-size: 11px;">[Редактировать]</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="admin-panel">
+    <h3 style="margin-top:0">Настройка объекта</h3>
+    <input type="text" id="in-name" placeholder="Название (напр. Вилла Лазурь)">
+    <input type="text" id="in-price" placeholder="Цена (напр. 5000 THB / сутки)">
+    <input type="text" id="in-desc" placeholder="Описание">
+    <input type="text" id="in-wa" placeholder="WhatsApp (7999...)">
+    <div id="file-box">
+        <label style="font-size: 12px; color: #888;">Фото 360:</label>
+        <input type="file" id="in-file" accept="image/*">
+    </div>
+    <input type="hidden" id="in-coords">
+    <button class="btn" style="width:100%; padding: 16px;" onclick="handleSave()">Сохранить</button>
+    <button class="btn" style="width:100%; margin-top:10px; background:none;" onclick="setPanel(false)">Отмена</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+<script>
+    let map, viewer, isAdd = false;
+    let data = JSON.parse(localStorage.getItem('ph_v9') || '[]');
+
+    // --- СЮДА ВСТАВЬ ССЫЛКУ НА СВОЮ ПАНОРАМУ ---
+    const DEMO_IMG = "https://pannellum.org/images/alma.jpg"; 
+
+    const demoPoint = {
+        id: 'demo',
+        name: 'Demo: Villa Phangan',
+        price: 'Бесплатно',
+        desc: 'Это пример того, как будет выглядеть твое портфолио для клиентов.',
+        wa: '79990000000',
+        coords: { lat: 9.71, lng: 99.98 },
+        img: DEMO_IMG
+    };
+
+    function init() {
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.73, 100.01], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": DEMO_IMG, "autoLoad": true, "showZoomCtrl": false });
+
+        // Отрисовка демо-точки
+        drawMarker(demoPoint);
+        // Отрисовка твоих сохраненных точек
+        data.forEach(p => drawMarker(p));
+
+        map.on('click', e => {
+            if(!isAdd) return;
+            document.getElementById('in-coords').value = JSON.stringify(e.latlng);
+            document.getElementById('file-box').style.display = 'block';
+            setPanel(true);
+        });
+    }
+
+    document.getElementById('add-btn').onclick = () => {
+        isAdd = !isAdd;
+        document.getElementById('add-btn').innerText = isAdd ? "Ткни на карту" : "+ Точка";
+    };
+
+    function setPanel(s) { document.getElementById('admin-panel').classList.toggle('active', s); }
+
+    function drawMarker(p) {
+        const m = L.marker(p.coords).addTo(map);
+        m.on('click', () => {
+            viewer.destroy();
+            viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.img, "autoLoad": true });
+            
+            document.getElementById('info-card').style.display = 'block';
+            document.getElementById('card-title').innerText = p.name;
+            document.getElementById('card-price').innerText = p.price || "";
+            document.getElementById('card-desc').innerText = p.desc || "";
+            document.getElementById('wa-link').href = "https://wa.me/" + p.wa;
+            
+            document.getElementById('edit-trigger').onclick = () => {
+                document.getElementById('in-name').value = p.name;
+                document.getElementById('in-price').value = p.price || "";
+                document.getElementById('in-desc').value = p.desc || "";
+                document.getElementById('in-wa').value = p.wa || "";
+                document.getElementById('in-coords').value = JSON.stringify(p.coords);
+                document.getElementById('file-box').style.display = 'none'; // Не меняем фото при ред. текста
+                setPanel(true);
+            };
+        });
+    }
+
+    function handleSave() {
+        const name = document.getElementById('in-name').value;
+        const price = document.getElementById('in-price').value;
+        const desc = document.getElementById('in-desc').value;
+        const wa = document.getElementById('in-wa').value;
+        const file = document.getElementById('in-file').files[0];
+        const coords = JSON.parse(document.getElementById('in-coords').value);
+
+        // Если это редактирование существующей точки (фото не выбрано)
+        const existingIdx = data.findIndex(p => p.coords.lat === coords.lat && p.coords.lng === coords.lng);
+        if (existingIdx > -1 && !file) {
+            data[existingIdx].name = name;
+            data[existingIdx].price = price;
+            data[existingIdx].desc = desc;
+            data[existingIdx].wa = wa;
+            localStorage.setItem('ph_v9', JSON.stringify(data));
+            location.reload();
+            return;
+        }
+
+        if(!name || !file) return alert("Имя и фото обязательны!");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 2048; canvas.height = 1024;
+                canvas.getContext('2d').drawImage(img, 0, 0, 2048, 1024);
+                const compressed = canvas.toDataURL('image/jpeg', 0.6);
+                const newP = { name, price, desc, wa, coords, img: compressed, id: Date.now() };
+                data.push(newP);
+                localStorage.setItem('ph_v9', JSON.stringify(data));
+                location.reload();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    init();
+</script>
+</body>
+</html>
