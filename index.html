@@ -3,180 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phangan 360 PRO</title>
+    <title>Phangan 360 - High Quality</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <style>
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; background: #000; color: #fff; overflow: hidden; }
-        #main-container { display: flex; flex: 1; flex-direction: column-reverse; overflow: hidden; }
-        #map { width: 100%; height: 35%; border-top: 1px solid #222; }
-        #panorama-container { width: 100%; height: 65%; position: relative; background: #000; }
+        
+        /* Динамические размеры блоков */
+        #main-container { display: flex; flex: 1; flex-direction: column-reverse; transition: all 0.4s ease; }
+        
+        #map { width: 100%; height: 40%; border-top: 1px solid #333; transition: height 0.4s ease; }
+        #panorama-container { width: 100%; height: 60%; position: relative; transition: height 0.4s ease; }
+        
+        /* Состояния развертывания */
+        .map-full #map { height: 85%; }
+        .map-full #panorama-container { height: 15%; }
+        .pano-full #map { height: 10%; }
+        .pano-full #panorama-container { height: 90%; }
+
         #panorama { width: 100%; height: 100%; }
         .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
         
-        /* Кнопка админа */
-        .controls { position: absolute; top: 15px; right: 15px; z-index: 1000; display: none; }
-        .btn { background: #007aff; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; }
+        /* Кнопки */
+        .admin-btn { position: absolute; top: 15px; left: 15px; z-index: 1000; background: rgba(0,0,0,0.6); color: white; border: 1px solid #444; padding: 10px 15px; border-radius: 8px; font-size: 12px; }
         
-        /* Карточка объекта */
-        #info-card { position: absolute; bottom: 15px; left: 15px; right: 15px; z-index: 1000; background: rgba(20,20,20,0.9); padding: 15px; border-radius: 18px; border: 1px solid #333; backdrop-filter: blur(10px); display: none; }
-        .price { color: #34c759; font-weight: bold; font-size: 18px; }
-        .btn-wa { background: #25d366; color: white; text-decoration: none; padding: 12px; border-radius: 10px; display: block; text-align: center; font-weight: bold; margin-top: 10px; }
+        #insta-link { position: absolute; top: 15px; right: 15px; z-index: 1000; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; padding: 12px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 14px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: fadeIn 1s forwards; }
 
-        /* Понятная Админка */
-        #admin-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1c1c1e; z-index: 3000; display: none; flex-direction: column; padding: 30px 20px; box-sizing: border-box; }
-        .step-label { color: #007aff; font-weight: bold; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; display: block; }
-        input { background: #2c2c2e; border: 1px solid #3d3d3f; color: white; padding: 15px; border-radius: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
-        .loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:4000; }
+        /* Карточка данных */
+        #info-card { position: absolute; bottom: 20px; left: 20px; z-index: 1000; background: rgba(20,20,20,0.8); padding: 15px; border-radius: 12px; border: 1px solid #333; backdrop-filter: blur(5px); pointer-events: none; }
+
+        /* Полноэкранная админка */
+        #admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 5000; display: none; flex-direction: column; padding: 40px 20px; box-sizing: border-box; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; font-size: 16px; margin-bottom: 15px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="pano-full">
 
 <div id="main-container">
-    <div id="map"></div>
-    <div id="panorama-container">
+    <div id="map" onclick="expandMap()"></div>
+    <div id="panorama-container" onclick="expandPano()">
         <div id="panorama"></div>
-        <div class="controls" id="admin-btn-wrap">
-            <button class="btn" id="add-btn">+ Добавить объект</button>
-        </div>
-        <div id="info-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 id="card-title" style="margin:0; font-size: 18px;" onclick="secretClick()"></h3>
-                <div class="price" id="card-price"></div>
-            </div>
-            <div id="card-desc" style="font-size: 13px; color: #aaa; margin-top: 5px;"></div>
-            <a id="wa-link" href="#" class="btn-wa" target="_blank">Связаться в WhatsApp</a>
+        <button class="admin-btn" onclick="event.stopPropagation(); openAdmin()">+ Точка</button>
+        <a id="insta-link" href="https://instagram.com/slavaphangan" target="_blank">Instagram Portfolio</a>
+        
+        <div id="info-card" id="card" style="display:none">
+            <b id="card-title" style="font-size:18px"></b><br>
+            <span id="card-desc" style="color:#aaa; font-size:13px"></span>
         </div>
     </div>
 </div>
 
 <div id="admin-panel">
-    <h2 style="margin-top:0">Новая точка</h2>
-    
-    <span class="step-label">Шаг 1: Информация</span>
-    <input type="text" id="in-name" placeholder="Название (напр. Sunset Villa)">
-    <input type="text" id="in-price" placeholder="Цена (напр. 3000 THB)">
-    <input type="text" id="in-wa" placeholder="WhatsApp (79991234567)">
-    
-    <span class="step-label">Шаг 2: Описание</span>
-    <input type="text" id="in-desc" placeholder="Коротко о месте">
-    
-    <span class="step-label">Шаг 3: Фото 360</span>
+    <h2 style="margin-top:0">Добавить 360° точку</h2>
+    <input type="text" id="in-name" placeholder="Название объекта">
+    <input type="text" id="in-desc" placeholder="Описание">
     <input type="file" id="in-file" accept="image/*">
-    
-    <input type="hidden" id="in-coords">
-    
-    <button class="btn" style="width:100%; padding: 18px; margin-top:20px; background:#34c759;" onclick="handleSave()">СОХРАНИТЬ И ОПУБЛИКОВАТЬ</button>
-    <button class="btn" style="width:100%; margin-top:10px; background:none; border:1px solid #444;" onclick="closeAdmin()">ОТМЕНА</button>
-
-    <div class="loading-overlay" id="loader">
-        <div style="font-size: 20px; margin-bottom:10px;">⏳</div>
-        <div>Оптимизация 360°...</div>
-    </div>
+    <p style="font-size: 11px; color: #888;">* Сохранение займет время, так как файл не сжимается.</p>
+    <button style="background:#007aff; color:white; border:none; padding:18px; border-radius:12px; font-weight:bold;" onclick="savePoint()">ОПУБЛИКОВАТЬ</button>
+    <button style="background:none; color:#888; border:none; margin-top:15px;" onclick="closeAdmin()">ОТМЕНА</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
-    let map, viewer, isAddMode = false;
-    let viewedPoints = new Set();
-    let secretCounter = 0;
-    
-    // ТВОЯ КАРТИНКА ИЗ SUPABASE
+    let map, viewer;
     const SUNSET_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/sign/360%20-10/sunset%20Thong%20Sala.JPG?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83NWRlMzdkZC03OTI4LTQ1MjEtYjFhNS0xOTUxY2I0N2QxN2IiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiIzNjAgLTEwL3N1bnNldCBUaG9uZyBTYWxhLkpQRyIsImlhdCI6MTc3NzEyOTA3NCwiZXhwIjoxODA4NjY1MDc0fQ.8pY65AdSogP0twllPXJ_30lWR7KcPP9zV6IAqKQz79Q";
-
-    let data = JSON.parse(localStorage.getItem('ph_v11') || '[]');
+    
+    let data = JSON.parse(localStorage.getItem('ph_v12') || '[]');
+    let clickCoords = null;
 
     function init() {
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true, "showZoomCtrl": false });
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": SUNSET_IMG, "autoLoad": true, "showZoomCtrl": true });
 
-        // Первая главная точка (Sunset)
-        drawMarker({id:'main', name:'Thong Sala Sunset', price:'Portfolio', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG, desc:'Твое первое профессиональное фото на карте.'});
-        
+        // Основная точка
+        drawMarker({name:'Thong Sala Sunset', coords:{lat:9.7107, lng:99.9813}, img:SUNSET_IMG, desc:'Original Quality Demo'});
         data.forEach(p => drawMarker(p));
 
-        map.on('click', e => {
-            if(!isAddMode) return;
-            document.getElementById('in-coords').value = JSON.stringify(e.latlng);
-            document.getElementById('admin-panel').style.display = 'flex';
-        });
+        map.on('click', e => { clickCoords = e.latlng; });
+
+        // Таймер на Instagram (180 секунд = 3 минуты)
+        setTimeout(() => {
+            document.getElementById('insta-link').style.display = 'block';
+        }, 180000);
     }
 
     function drawMarker(p) {
         const m = L.marker(p.coords).addTo(map);
-        m.on('click', () => {
+        m.on('click', (e) => {
+            L.DomEvent.stopPropagation(e);
             viewer.destroy();
             viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.img, "autoLoad": true });
-            
-            viewedPoints.add(p.id || p.name);
-            if(viewedPoints.size >= 3) document.getElementById('admin-btn-wrap').style.display = 'block';
-
-            const card = document.getElementById('info-card');
-            card.style.display = 'block';
+            document.getElementById('info-card').style.display = 'block';
             document.getElementById('card-title').innerText = p.name;
-            document.getElementById('card-price').innerText = p.price || "";
             document.getElementById('card-desc').innerText = p.desc || "";
-            document.getElementById('wa-link').href = "https://wa.me/" + (p.wa || "79991234567");
+            expandPano();
         });
     }
 
-    function secretClick() {
-        secretCounter++;
-        if(secretCounter >= 5) {
-            document.getElementById('admin-btn-wrap').style.display = 'block';
-            alert("Админ-режим активирован");
-        }
+    function expandMap() {
+        document.body.className = 'map-full';
+        setTimeout(() => map.invalidateSize(), 400);
     }
 
-    document.getElementById('add-btn').onclick = () => {
-        isAddMode = !isAddMode;
-        document.getElementById('add-btn').innerText = isAddMode ? "Ткни в место на карте" : "+ Добавить объект";
-        document.getElementById('add-btn').style.background = isAddMode ? "#ff3b30" : "#007aff";
-    };
+    function expandPano() {
+        document.body.className = 'pano-full';
+        setTimeout(() => map.invalidateSize(), 400);
+    }
 
-    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; isAddMode = false; }
+    function openAdmin() {
+        if(!clickCoords) return alert("Сначала нажми на карту, чтобы выбрать место!");
+        document.getElementById('admin-panel').style.display = 'flex';
+    }
 
-    function handleSave() {
+    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
+
+    function savePoint() {
         const name = document.getElementById('in-name').value;
         const file = document.getElementById('in-file').files[0];
-        const coords = document.getElementById('in-coords').value;
-
-        if(!name || !file || !coords) return alert("Заполни всё: имя, фото и выбери место на карте!");
-
-        document.getElementById('loader').style.display = 'flex';
+        if(!name || !file) return alert("Нужны название и файл!");
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                // ОПТИМАЛЬНЫЙ РАЗМЕР ДЛЯ 360
-                canvas.width = 2048; 
-                canvas.height = 1024;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, 2048, 1024);
-                
-                // КОНВЕРТАЦИЯ И СЖАТИЕ (0.6 - отличное качество при малом весе)
-                const optimizedImg = canvas.toDataURL('image/jpeg', 0.6);
-                
-                data.push({
-                    id: Date.now(),
-                    name: name,
-                    price: document.getElementById('in-price').value,
-                    wa: document.getElementById('in-wa').value,
-                    desc: document.getElementById('in-desc').value,
-                    coords: JSON.parse(coords),
-                    img: optimizedImg
-                });
-
-                localStorage.setItem('ph_v11', JSON.stringify(data));
-                location.reload();
-            };
-            img.src = e.target.result;
+            // Сохраняем "как есть" (максимальное качество)
+            data.push({
+                name: name,
+                desc: document.getElementById('in-desc').value,
+                coords: clickCoords,
+                img: e.target.result // Исходный Base64 без сжатия
+            });
+            localStorage.setItem('ph_v12', JSON.stringify(data));
+            location.reload();
         };
         reader.readAsDataURL(file);
     }
