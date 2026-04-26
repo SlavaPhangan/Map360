@@ -3,61 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phangan 360 PRO - v4.3 Stable</title>
+    <title>Phangan 360 Minimal - v4.4</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <style>
-        :root { --accent: #007aff; }
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; background: #000; color: #fff; overflow: hidden; }
+        :root { --bg: #000; --ui-bg: rgba(20, 20, 20, 0.9); --border: rgba(255,255,255,0.15); }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; height: 100vh; background: var(--bg); color: #fff; overflow: hidden; }
+        
         #main-container { display: flex; height: 100vh; width: 100vw; flex-direction: column-reverse; }
-        @media (min-width: 1024px) { #main-container { flex-direction: row; } #map { width: 30% !important; height: 100% !important; border-right: 1px solid #222; } #panorama-container { width: 70% !important; height: 100% !important; } }
-        #map { width: 100%; height: 35%; border-top: 1px solid #333; transition: 0.4s; }
-        #panorama-container { width: 100%; height: 65%; position: relative; transition: 0.4s; }
-        .map-full #map { height: 85%; } .map-full #panorama-container { height: 15%; }
-        .pano-full #map { height: 10%; } .pano-full #panorama-container { height: 90%; }
+        @media (min-width: 1024px) { 
+            #main-container { flex-direction: row; } 
+            #map { width: 35% !important; height: 100% !important; border-right: 1px solid var(--border); } 
+            #panorama-container { width: 65% !important; height: 100% !important; } 
+        }
+        
+        #map { width: 100%; height: 40%; border-top: 1px solid var(--border); transition: height 0.4s ease; }
+        #panorama-container { width: 100%; height: 60%; position: relative; transition: height 0.4s ease; }
+        
+        .map-full #map { height: 90%; } .map-full #panorama-container { height: 10%; }
+        .pano-full #map { height: 15%; } .pano-full #panorama-container { height: 85%; }
+
         #panorama { width: 100%; height: 100%; background: #000; }
         .leaflet-control-attribution { display: none !important; }
-        .ui-controls { position: absolute; top: 15px; left: 15px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
-        .btn-ui { background: rgba(30,30,30,0.85); color: white; border: 1px solid #444; padding: 12px 18px; border-radius: 12px; font-weight: 600; backdrop-filter: blur(10px); cursor: pointer; }
-        #top-info { position: absolute; top: 15px; right: 15px; z-index: 2000; background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 12px; text-align: right; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
-        .marker-icon { width: 34px; height: 34px; background: rgba(0,122,255,0.1); border: 2px solid var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; overflow-y: auto; }
-        input, select { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
-        .popup-menu { display: flex; flex-direction: column; gap: 8px; padding: 5px; color: white; }
-        .leaflet-popup-content-wrapper { background: #1c1c1e; color: white; border-radius: 12px; border: 1px solid #444; }
+
+        /* Маркеры без эмодзи и синевы */
+        .dot-marker { width: 12px; height: 12px; background: #fff; border: 2px solid #000; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .dot-marker.active { background: #fff; border-color: #fff; transform: scale(1.3); box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
+        /* Панели UI */
+        .ui-panel { position: absolute; z-index: 3000; background: var(--ui-bg); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+        #top-info { top: 15px; right: 15px; text-align: right; pointer-events: auto; cursor: pointer; }
+        
+        #admin-editor { bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; display: none; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+
+        input, select { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; width: 100%; box-sizing: border-box; outline: none; }
+        .btn { background: #fff; color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-danger { background: #ff3b30; color: #fff; }
+
+        /* Стили Popup */
+        .leaflet-popup-content-wrapper { background: #1a1a1a; color: #fff; border-radius: 12px; border: 1px solid var(--border); }
+        .leaflet-popup-tip { background: #1a1a1a; }
     </style>
 </head>
 <body class="pano-full">
 
 <div id="main-container">
-    <div id="map" onclick="handleMapClick()"></div>
-    <div id="panorama-container" onclick="handlePanoClick()">
+    <div id="map" onclick="handleMapFocus()"></div>
+    <div id="panorama-container" onclick="handlePanoFocus()">
         <div id="panorama"></div>
-        <div id="top-info" onclick="checkAuth()">
-            <h2 id="display-title" style="margin:0; font-size:18px; color:var(--accent);">Phangan 360</h2>
-            <p id="display-desc" style="margin:3px 0 0; font-size:12px; color:#ccc;">by Slava Lagoykin</p>
+        <div id="top-info" class="ui-panel" onclick="checkAuth()">
+            <h2 id="display-title" style="margin:0; font-size:16px;">Phangan 360</h2>
+            <p id="display-desc" style="margin:4px 0 0; font-size:11px; opacity:0.6;">by Slava Lagoykin</p>
         </div>
-        <div class="ui-controls" id="admin-ui" style="display:none">
-            <button class="btn-ui" onclick="event.stopPropagation(); openAdmin()">+ Добавить точку</button>
-            <button class="btn-ui" style="background:#444" onclick="logout()">Выйти</button>
-        </div>
-        <button onclick="event.stopPropagation(); takeScreenshot()" style="position:absolute; bottom:100px; right:20px; z-index:2000; background:rgba(0,0,0,0.5); border:1px solid #444; color:white; width:50px; height:50px; border-radius:50%; font-size:24px;">📸</button>
-        <div style="position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:2000; display:flex; gap:60px;">
-            <button style="background:none; border:none; color:white; font-size:40px;" onclick="event.stopPropagation(); navigate(-1)">‹</button>
-            <button style="background:none; border:none; color:white; font-size:40px;" onclick="event.stopPropagation(); navigate(1)">›</button>
-        </div>
+        
+        <button onclick="takeScreenshot()" style="position:absolute; top:15px; left:15px; z-index:2000; background:var(--ui-bg); border:1px solid var(--border); color:white; width:44px; height:44px; border-radius:12px;">📸</button>
     </div>
 </div>
 
-<div id="admin-panel">
-    <h2 id="adm-head">Новая точка</h2>
+<div id="admin-editor" class="ui-panel">
+    <h3 id="panel-mode" style="margin:0 0 15px 0; font-size:16px;">Добавить точку</h3>
     <input type="hidden" id="edit-id">
-    <input type="text" id="in-name" placeholder="Название">
-    <input type="text" id="in-url" placeholder="Ссылка на фото (Supabase)">
-    <input type="text" id="in-desc" placeholder="Описание">
-    <select id="in-time"><option value="day">☀️ День</option><option value="sunset">🌅 Закат</option><option value="sunrise">🌄 Рассвет</option></select>
-    <button class="btn-ui" style="background:var(--accent); border:none; width:100%; padding:20px;" onclick="save()">СОХРАНИТЬ 🥥</button>
-    <button class="btn-ui" style="background:none; border:none; width:100%; margin-top:10px; color:#555;" onclick="closeAdmin()">ОТМЕНА</button>
+    <input type="text" id="in-name" placeholder="Название места">
+    <input type="text" id="in-url" placeholder="URL панорамы">
+    <input type="text" id="in-desc" placeholder="Описание (необязательно)">
+    <select id="in-time">
+        <option value="day">День</option>
+        <option value="sunset">Закат</option>
+        <option value="sunrise">Рассвет</option>
+    </select>
+    <div style="display:flex; gap:10px;">
+        <button class="btn" style="flex:2" onclick="saveData()">Сохранить</button>
+        <button id="del-btn" class="btn btn-danger" style="flex:1; display:none;" onclick="deletePoint()">Удалить</button>
+    </div>
+    <button class="btn btn-secondary" onclick="closeEditor()">Отмена</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -66,45 +85,46 @@
 <script>
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
-    const SUNSET_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/sign/360%20-10/sunset%20Thong%20Sala.JPG?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83NWRlMzdkZC03OTI4LTQ1MjEtYjFhNS0xOTUxY2I0N2QxN2IiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiIzNjAgLTEwL3N1bnNldCBUaG9uZyBTYWxhLkpQRyIsImlhdCI6MTc3NzEyOTA3NCwiZXhwIjoxODA4NjY1MDc0fQ.8pY65AdSogP0twllPXJ_30lWR7KcPP9zV6IAqKQz79Q";
-    
-    let map, viewer, clickCoords = null;
-    let allPoints = [];
-    let curIdx = 0;
+    const FIXED_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/sign/360%20-10/sunset%20Thong%20Sala.JPG?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83NWRlMzdkZC03OTI4LTQ1MjEtYjFhNS0xOTUxY2I0N2QxN2IiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiIzNjAgLTEwL3N1bnNldCBUaG9uZyBTYWxhLkpQRyIsImlhdCI6MTc3NzEyOTA3NCwiZXhwIjoxODA4NjY1MDc0fQ.8pY65AdSogP0twllPXJ_30lWR7KcPP9zV6IAqKQz79Q";
+
+    let map, viewer, clickCoords = null, allPoints = [], curIdx = 0;
     let isAdmin = localStorage.getItem('slava_admin') === 'true';
 
     async function init() {
-        map = L.map('map', { zoomControl: true, attributionControl: false }).setView([9.71, 99.98], 12);
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png').addTo(map);
 
-        if(isAdmin) document.getElementById('admin-ui').style.display = 'flex';
-        await load();
-        map.on('click', e => { clickCoords = e.latlng; });
+        await loadData();
+        
+        map.on('click', e => {
+            if(!isAdmin) return;
+            clickCoords = e.latlng;
+            openEditor(null); // Открыть для новой точки
+        });
     }
 
     function checkAuth() { if(prompt("Пароль:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); } }
-    function logout() { localStorage.removeItem('slava_admin'); location.reload(); }
 
-    async function load() {
+    async function loadData() {
         const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
         const data = await res.json();
-        // ПЕРВОЕ ФОТО ВСЕГДА ЗАКРЕПЛЕНО
-        allPoints = [{id: 'fixed', name: 'Thong Sala Sunset', description: 'Welcome to Phangan', url: SUNSET_IMG, coords: {lat: 9.7107, lng: 99.9813}, time: 'sunset'}, ...data];
+        allPoints = [{id: 'fixed', name: 'Thong Sala Sunset', description: 'Starting Point', url: FIXED_IMG, coords: {lat: 9.7107, lng: 99.9813}, time: 'sunset'}, ...data];
         renderMarkers();
         loadPano(allPoints[0]);
     }
 
     function renderMarkers() {
+        map.eachLayer(l => { if(l instanceof L.Marker) map.removeLayer(l); });
         allPoints.forEach((p, i) => {
-            const icons = { day: '☀️', sunset: '🌅', sunrise: '🌄' };
-            const icon = L.divIcon({ className: 'marker-wrapper', html: `<div class="marker-icon">${icons[p.time || 'day']}</div>`, iconSize: [34, 34] });
-            const m = L.marker(p.coords, {icon, draggable: isAdmin && p.id !== 'fixed'}).addTo(map);
+            const icon = L.divIcon({ className: `dot-marker ${i === curIdx ? 'active' : ''}`, iconSize: [12, 12] });
+            const m = L.marker(p.coords, { icon, draggable: isAdmin && p.id !== 'fixed' }).addTo(map);
             
-            let html = `<div class="popup-menu"><b>${p.name}</b>`;
-            if(isAdmin && p.id !== 'fixed') html += `<button class="btn-ui" style="padding:5px; margin-top:5px; font-size:10px;" onclick="openEdit(${i})">Изменить</button>`;
-            html += `</div>`;
-            m.bindPopup(html);
+            m.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                curIdx = i;
+                loadPano(p);
+                if(isAdmin && p.id !== 'fixed') openEditor(i);
+            });
 
             m.on('dragend', async (e) => {
                 await fetch(`${SB_URL}/rest/v1/locations?id=eq.${p.id}`, {
@@ -112,39 +132,65 @@
                     body: JSON.stringify({ coords: e.target.getLatLng() })
                 });
             });
-            m.on('click', () => { curIdx = i; loadPano(p); handlePanoClick(); });
         });
+    }
+
+    function openEditor(idx) {
+        const panel = document.getElementById('admin-editor');
+        panel.style.display = 'flex';
+        const delBtn = document.getElementById('del-btn');
+        
+        if(idx !== null) {
+            const p = allPoints[idx];
+            document.getElementById('panel-mode').innerText = "Редактировать точку";
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('in-name').value = p.name;
+            document.getElementById('in-url').value = p.url;
+            document.getElementById('in-desc').value = p.description;
+            document.getElementById('in-time').value = p.time;
+            delBtn.style.display = 'block';
+        } else {
+            document.getElementById('panel-mode').innerText = "Новая точка";
+            document.getElementById('edit-id').value = '';
+            document.querySelectorAll('#admin-editor input').forEach(i => i.value = '');
+            delBtn.style.display = 'none';
+        }
+    }
+
+    function closeEditor() { document.getElementById('admin-editor').style.display = 'none'; }
+
+    async function saveData() {
+        const id = document.getElementById('edit-id').value;
+        const body = { 
+            name: document.getElementById('in-name').value, 
+            url: document.getElementById('in-url').value, 
+            description: document.getElementById('in-desc').value, 
+            time: document.getElementById('in-time').value 
+        };
+
+        if(id) {
+            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        } else {
+            body.coords = clickCoords;
+            await fetch(`${SB_URL}/rest/v1/locations`, { method: 'POST', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        }
+        location.reload();
+    }
+
+    async function deletePoint() {
+        const id = document.getElementById('edit-id').value;
+        if(confirm("Удалить точку?")) {
+            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'DELETE', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+            location.reload();
+        }
     }
 
     function loadPano(p) {
         if (viewer) viewer.destroy();
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": true });
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": false });
         document.getElementById('display-title').innerText = p.name;
         document.getElementById('display-desc').innerText = p.description || "by Slava Lagoykin";
-    }
-
-    function openEdit(i) {
-        const p = allPoints[i];
-        document.getElementById('edit-id').value = p.id;
-        document.getElementById('in-name').value = p.name;
-        document.getElementById('in-url').value = p.url;
-        document.getElementById('in-desc').value = p.description;
-        document.getElementById('in-time').value = p.time;
-        document.getElementById('admin-panel').style.display = 'flex';
-    }
-
-    async function save() {
-        const id = document.getElementById('edit-id').value;
-        const body = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, description: document.getElementById('in-desc').value, time: document.getElementById('in-time').value };
-        if(id) {
-            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        } else {
-            if(!clickCoords) return alert("Ткни в карту!");
-            body.coords = clickCoords;
-            await fetch(`${SB_URL}/rest/v1/locations`, { method: 'POST', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        }
-        new Audio("https://www.myinstants.com/media/sounds/coconut.mp3").play();
-        location.reload();
+        renderMarkers();
     }
 
     function takeScreenshot() {
@@ -153,16 +199,13 @@
         temp.width = canvas.width; temp.height = canvas.height;
         const ctx = temp.getContext('2d');
         ctx.drawImage(canvas, 0, 0);
-        ctx.font = "30px sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "right";
-        ctx.fillText("Slava Lagoykin", temp.width - 40, temp.height - 40);
+        ctx.font = "bold 24px sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "right";
+        ctx.fillText("Slava Lagoykin", temp.width - 30, temp.height - 30);
         const link = document.createElement('a'); link.download = 'Phangan360.png'; link.href = temp.toDataURL(); link.click();
     }
 
-    function handleMapClick() { if(window.innerWidth < 1024) document.body.className = 'map-full'; setTimeout(() => { map.invalidateSize(); viewer.resize(); }, 450); }
-    function handlePanoClick() { if(window.innerWidth < 1024) document.body.className = 'pano-full'; setTimeout(() => { map.invalidateSize(); viewer.resize(); }, 450); }
-    function openAdmin() { document.getElementById('admin-panel').style.display = 'flex'; }
-    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; document.getElementById('edit-id').value = ''; }
-    function navigate(dir) { curIdx = (curIdx + dir + allPoints.length) % allPoints.length; loadPano(allPoints[curIdx]); }
+    function handleMapFocus() { if(window.innerWidth < 1024) document.body.className = 'map-full'; setTimeout(() => { map.invalidateSize(); viewer.resize(); }, 400); }
+    function handlePanoFocus() { if(window.innerWidth < 1024) document.body.className = 'pano-full'; setTimeout(() => { map.invalidateSize(); viewer.resize(); }, 400); }
 
     init();
 </script>
