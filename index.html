@@ -63,8 +63,6 @@
 <script>
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
-    
-    // ПРЯМАЯ ССЫЛКА НА ФОТО (ПРОВЕРЕНО - РАБОТАЕТ)
     const START_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG";
 
     let map, viewer, points = [], curIdx = 0, clickCoords = null;
@@ -73,7 +71,6 @@
     async function init() {
         map = L.map('map', { zoomControl: true, attributionControl: false }).setView([9.71, 99.98], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
-
         if(isAdmin) document.getElementById('admin-ui').style.display = 'flex';
         await load();
         map.on('click', e => { if(isAdmin) { clickCoords = e.latlng; openAdmin(null); } });
@@ -83,67 +80,19 @@
 
     async function load() {
         try {
-            const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { 
-                headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } 
-            });
+            const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
             const data = await res.json();
-            // Если база выдала ошибку (например, 404), используем только стартовое фото
-            points = (Array.isArray(data)) ? [{id:'fixed', name:'Welcome Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset'}, ...data] : [{id:'fixed', name:'Welcome Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset'}];
+            points = [{id:'fixed', name:'Thong Sala Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset', wa:'79242551410'}, ...data];
+            renderMarkers();
+            loadPano(points[0]);
         } catch(e) {
-            points = [{id:'fixed', name:'Welcome Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset'}];
+            console.error("Database error, loading failsafe");
+            points = [{id:'fixed', name:'Thong Sala Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset', wa:'79242551410'}];
+            renderMarkers();
+            loadPano(points[0]);
         }
-        renderMarkers();
-        loadPano(points[0]);
     }
 
     function renderMarkers() {
         map.eachLayer(l => { if(l instanceof L.Marker) map.removeLayer(l); });
-        points.forEach((p, i) => {
-            const icon = L.divIcon({ className: `dot-marker`, iconSize: [10, 10] });
-            const m = L.marker(p.coords, { icon, draggable: isAdmin && p.id !== 'fixed' }).addTo(map);
-            m.on('click', e => { L.DomEvent.stopPropagation(e); curIdx = i; loadPano(p); handlePanoFocus(); if(isAdmin && p.id !== 'fixed') openAdmin(i); });
-        });
-    }
-
-    function loadPano(p) {
-        if(viewer) viewer.destroy();
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": true });
-        document.getElementById('display-title').innerText = p.name;
-    }
-
-    function openAdmin(idx) {
-        document.getElementById('admin-panel').style.display = 'flex';
-        if(idx !== null) {
-            const p = points[idx];
-            document.getElementById('edit-id').value = p.id;
-            document.getElementById('in-name').value = p.name;
-            document.getElementById('in-url').value = p.url;
-            document.getElementById('in-wa').value = p.wa || '';
-            document.getElementById('del-btn').style.display = 'block';
-        } else {
-            document.getElementById('edit-id').value = '';
-            document.getElementById('del-btn').style.display = 'none';
-        }
-    }
-
-    async function save() {
-        const id = document.getElementById('edit-id').value;
-        const body = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, wa: document.getElementById('in-wa').value, description: document.getElementById('in-desc').value, time: document.getElementById('in-time').value };
-        if(id) {
-            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        } else {
-            body.coords = clickCoords;
-            await fetch(`${SB_URL}/rest/v1/locations`, { method: 'POST', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        }
-        location.reload();
-    }
-
-    function handleMapFocus() { if(window.innerWidth < 1024) document.body.className = 'map-full'; setTimeout(() => { map.invalidateSize(); if(viewer) viewer.resize(); }, 450); }
-    function handlePanoFocus() { if(window.innerWidth < 1024) document.body.className = 'pano-full'; setTimeout(() => { map.invalidateSize(); if(viewer) viewer.resize(); }, 450); }
-    function navigate(dir) { curIdx = (curIdx + dir + points.length) % points.length; loadPano(points[curIdx]); }
-    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
-
-    init();
-</script>
-</body>
-</html>
+        points.forEach
