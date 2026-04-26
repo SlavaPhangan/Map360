@@ -9,19 +9,30 @@
     <style>
         :root { --accent: #007aff; --bg: #000; --ui: rgba(15, 15, 15, 0.9); --border: rgba(255,255,255,0.15); }
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; background: #000; color: #fff; overflow: hidden; }
+        
         #main-container { display: flex; height: 100vh; width: 100vw; flex-direction: column-reverse; }
-        @media (min-width: 1024px) { #main-container { flex-direction: row; } #map { width: 30% !important; height: 100% !important; border-right: 1px solid var(--border); } #panorama-container { width: 70% !important; height: 100% !important; } }
+        @media (min-width: 1024px) { 
+            #main-container { flex-direction: row; } 
+            #map { width: 30% !important; height: 100% !important; border-right: 1px solid var(--border); } 
+            #panorama-container { width: 70% !important; height: 100% !important; }
+        }
+        
         #map { width: 100%; height: 35%; border-top: 1px solid var(--border); transition: height 0.4s ease; }
         #panorama-container { width: 100%; height: 65%; position: relative; transition: height 0.4s ease; }
-        .map-full #map { height: 85%; } .pano-full #map { height: 10%; }
+        
+        .map-full #map { height: 85%; } .pano-full #map { height: 15%; }
         #panorama { width: 100%; height: 100%; background: #000; }
+        .leaflet-control-attribution { display: none !important; }
+
         .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 14px; padding: 15px; }
         #top-info { top: 15px; right: 15px; text-align: right; cursor: pointer; }
+        
         .btn-wa { background: #25d366; color: #fff; text-decoration: none; padding: 10px 15px; border-radius: 8px; display: inline-block; font-size: 13px; font-weight: 600; margin-top: 10px; }
-        .shot-btn { position: absolute; bottom: 25px; left: 20px; z-index: 2000; background: var(--ui); border: 1px solid var(--border); color: #fff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+        
         .dot-marker { width: 10px; height: 10px; background: #fff; border: 2px solid #000; border-radius: 50%; }
-        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; }
-        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
+        
+        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; overflow-y: auto; }
+        input, select { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body class="pano-full">
@@ -30,15 +41,17 @@
     <div id="map" onclick="handleMapFocus()"></div>
     <div id="panorama-container" onclick="handlePanoFocus()">
         <div id="panorama"></div>
+        
         <div id="top-info" class="ui-card" onclick="checkAuth()">
             <h2 style="margin:0; font-size:18px; color:var(--accent);">KOH PHANGAN 360</h2>
-            <p id="display-title" style="margin:4px 0 0; font-size:13px; opacity:0.7;">Explore</p>
+            <p id="display-title" style="margin:4px 0 0; font-size:13px; opacity:0.7;">Explore the Island</p>
             <div id="wa-wrap"></div>
         </div>
-        <div id="admin-controls" style="position:absolute; top:15px; left:15px; z-index:2000; display:none;">
+
+        <div id="admin-ui" style="position:absolute; top:15px; left:15px; z-index:2000; display:none;">
             <button class="btn-wa" style="background:var(--accent)" onclick="event.stopPropagation(); openAdmin(null)">+ ADD POINT</button>
         </div>
-        <button class="shot-btn" onclick="event.stopPropagation(); takeScreenshot()">📸</button>
+
         <div style="position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:2000; display:flex; gap:60px;">
             <button style="background:none; border:none; color:white; font-size:40px; cursor:pointer;" onclick="event.stopPropagation(); navigate(-1)">‹</button>
             <button style="background:none; border:none; color:white; font-size:40px; cursor:pointer;" onclick="event.stopPropagation(); navigate(1)">›</button>
@@ -47,17 +60,19 @@
 </div>
 
 <div id="admin-panel">
-    <h2>Admin Management</h2>
+    <h2 id="adm-head">Management</h2>
     <input type="hidden" id="edit-id">
     <input type="text" id="in-name" placeholder="Name">
     <input type="text" id="in-url" placeholder="URL">
-    <input type="text" id="in-wa" placeholder="WhatsApp">
+    <input type="text" id="in-wa" placeholder="WhatsApp (7999...)">
     <input type="text" id="in-desc" placeholder="Description">
-    <select id="in-time" style="background:#1a1a1a; color:white; padding:15px; border-radius:12px; width:100%; margin-bottom:12px;">
-        <option value="day">Day</option><option value="sunset">Sunset</option><option value="sunrise">Sunrise</option>
+    <select id="in-time">
+        <option value="day">Day</option>
+        <option value="sunset">Sunset</option>
+        <option value="sunrise">Sunrise</option>
     </select>
     <button class="btn-wa" style="background:var(--accent); width:100%; padding:20px;" onclick="save()">SAVE</button>
-    <button id="del-btn" class="btn-wa" style="background:#ff3b30; width:100%; margin-top:5px; display:none;" onclick="deletePt()">DELETE</button>
+    <button id="del-btn" class="btn-wa" style="background:#ff3b30; width:100%; margin-top:10px; display:none;" onclick="deletePt()">DELETE</button>
     <button class="btn-wa" style="background:none; width:100%; color:#555;" onclick="closeAdmin()">CANCEL</button>
 </div>
 
@@ -67,7 +82,7 @@
 <script>
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
-    const START_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG"; 
+    const START_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG";
 
     let map, viewer, points = [], curIdx = 0, clickCoords = null;
     let isAdmin = localStorage.getItem('slava_admin') === 'true';
@@ -75,7 +90,8 @@
     async function init() {
         map = L.map('map', { zoomControl: true, attributionControl: false }).setView([9.71, 99.98], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
-        if(isAdmin) document.getElementById('admin-controls').style.display = 'block';
+
+        if(isAdmin) document.getElementById('admin-ui').style.display = 'flex';
         await load();
         map.on('click', e => { if(isAdmin) { clickCoords = e.latlng; openAdmin(null); } });
     }
@@ -83,13 +99,11 @@
     function checkAuth() { if(!isAdmin && prompt("Password:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); } }
 
     async function load() {
-        try {
-            const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
-            const data = await res.json();
-            points = [{id:'fixed', name:'Thong Sala Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset', wa:'79242551410'}, ...data];
-            renderMarkers();
-            setTimeout(() => loadPano(points[0]), 500);
-        } catch(e) { console.error(e); }
+        const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+        const data = await res.json();
+        points = [{id:'fixed', name:'Thong Sala Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset', wa:'79242551410'}, ...data];
+        renderMarkers();
+        loadPano(points[0]);
     }
 
     function renderMarkers() {
@@ -109,32 +123,9 @@
 
     function loadPano(p) {
         if(viewer) viewer.destroy();
-        viewer = pannellum.viewer('panorama', { 
-            "type": "equirectangular", 
-            "panorama": p.url, 
-            "autoLoad": true, 
-            "showZoomCtrl": true
-        });
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": true });
         document.getElementById('display-title').innerText = p.name;
         document.getElementById('wa-wrap').innerHTML = p.wa ? `<a href="https://wa.me/${p.wa}" class="btn-wa" target="_blank">WhatsApp</a>` : '';
-    }
-
-    function takeScreenshot() {
-        const canvas = document.querySelector('.pnlm-render-container canvas');
-        if(!canvas) return;
-        const temp = document.createElement('canvas');
-        temp.width = canvas.width; temp.height = canvas.height;
-        const ctx = temp.getContext('2d');
-        try {
-            ctx.drawImage(canvas, 0, 0);
-            ctx.font = "bold 30px sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "right";
-            ctx.shadowColor = "black"; ctx.shadowBlur = 8;
-            ctx.fillText("Slava Lagoykin", temp.width - 40, temp.height - 40);
-            const link = document.createElement('a'); 
-            link.download = `KOH_PHANGAN_360.png`; 
-            link.href = temp.toDataURL("image/png"); 
-            link.click();
-        } catch(e) { alert("Чтобы сделать скриншот, нужно настроить CORS в Supabase. Но просмотр теперь работает!"); }
     }
 
     function openAdmin(idx) {
@@ -142,18 +133,4 @@
         if(idx !== null) {
             const p = points[idx];
             document.getElementById('edit-id').value = p.id;
-            document.getElementById('in-name').value = p.name;
-            document.getElementById('in-url').value = p.url;
-            document.getElementById('in-wa').value = p.wa || '';
-            document.getElementById('del-btn').style.display = 'block';
-        } else {
-            document.getElementById('edit-id').value = '';
-            document.getElementById('del-btn').style.display = 'none';
-        }
-    }
-
-    async function save() {
-        const id = document.getElementById('edit-id').value;
-        const body = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, wa: document.getElementById('in-wa').value, description: document.getElementById('in-desc').value, time: document.getElementById('in-time').value };
-        if(id) {
-            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method
+            document.getElementById('in-name').
