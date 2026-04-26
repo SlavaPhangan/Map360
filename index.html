@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phangan 360 PRO - Admin Mode</title>
+    <title>Phangan 360 PRO - Admin v4.2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <style>
@@ -26,9 +26,14 @@
         .pano-full #panorama-container { height: 90%; }
 
         #panorama { width: 100%; height: 100%; background: #000; }
-        .leaflet-control-attribution { display: none !important; }
+        
+        /* Стилизация Popup */
+        .leaflet-popup-content-wrapper { background: rgba(30,30,30,0.95); color: white; backdrop-filter: blur(10px); border: 1px solid #444; border-radius: 12px; }
+        .leaflet-popup-tip { background: rgba(30,30,30,0.95); }
+        .popup-menu { display: flex; flex-direction: column; gap: 8px; padding: 5px; }
+        .popup-btn { background: var(--accent); border: none; color: white; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .popup-btn.del { background: #ff3b30; }
 
-        /* UI Controls */
         .ui-controls { position: absolute; top: 15px; left: 15px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
         .btn-ui { background: rgba(30,30,30,0.8); color: white; border: 1px solid #444; padding: 12px; border-radius: 12px; font-weight: 600; backdrop-filter: blur(10px); cursor: pointer; }
         
@@ -38,8 +43,8 @@
         
         .marker-icon { width: 34px; height: 34px; background: rgba(0,122,255,0.15); border: 2px solid var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 
-        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; }
-        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
+        #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; overflow-y: auto; }
+        input, select { background: #1a1a1a; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; margin-bottom: 12px; width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body class="pano-full">
@@ -54,7 +59,8 @@
         </div>
         
         <div class="ui-controls" id="admin-ui" style="display:none">
-            <button class="btn-ui" onclick="event.stopPropagation(); openAdmin()">+ Добавить точку</button>
+            <button class="btn-ui" onclick="event.stopPropagation(); openAdmin()">+ Добавить новую точку</button>
+            <button class="btn-ui" style="background:#444" onclick="logoutAdmin()">Выйти из админки</button>
         </div>
 
         <button class="screenshot-btn" onclick="event.stopPropagation(); takeScreenshot()">📸</button>
@@ -67,16 +73,17 @@
 </div>
 
 <div id="admin-panel">
-    <h2>Новая точка (Admin)</h2>
+    <h2 id="admin-title">Добавить точку</h2>
+    <input type="hidden" id="edit-id">
     <input type="text" id="in-name" placeholder="Название">
     <input type="text" id="in-url" placeholder="URL фото из Supabase">
     <input type="text" id="in-desc" placeholder="Описание">
-    <select id="in-time" style="background:#1a1a1a; color:white; padding:16px; border-radius:12px; border:1px solid #333; margin-bottom:12px; width:100%;">
+    <select id="in-time">
         <option value="day">☀️ День</option>
         <option value="sunset">🌅 Закат</option>
         <option value="sunrise">🌄 Рассвет</option>
     </select>
-    <button class="btn-ui" style="background:var(--accent); border:none; width:100%; padding:20px;" onclick="saveToSupabase()">ОПУБЛИКОВАТЬ 🥥</button>
+    <button class="btn-ui" style="background:var(--accent); border:none; width:100%; padding:20px;" onclick="saveToSupabase()">СОХРАНИТЬ В ОБЛАКО 🥥</button>
     <button class="btn-ui" style="background:none; border:none; width:100%; margin-top:10px; color:#555;" onclick="closeAdmin()">ОТМЕНА</button>
 </div>
 
@@ -91,30 +98,30 @@
     let map, viewer, clickCoords = null;
     let allPoints = [];
     let currentIndex = 0;
-    let isAdmin = false;
-    let adminClicks = 0;
+    let isAdmin = localStorage.getItem('slava_auth') === 'true';
 
     async function init() {
         map = L.map('map', { zoomControl: true, attributionControl: false }).setView([9.71, 99.98], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png').addTo(map);
 
+        if(isAdmin) document.getElementById('admin-ui').style.display = 'flex';
+
         await loadFromSupabase();
         map.on('click', e => { clickCoords = e.latlng; });
     }
 
     function checkAdminTrigger() {
-        adminClicks++;
-        if(adminClicks >= 3) {
-            let pass = prompt("Введите пароль администратора:");
-            if(pass === "1234") {
-                isAdmin = true;
-                document.getElementById('admin-ui').style.display = 'flex';
-                alert("Режим редактирования включен! Теперь маркеры можно двигать.");
-                location.reload(); // Перезагрузка для активации draggable
-            }
-            adminClicks = 0;
+        let pass = prompt("Введите пароль:");
+        if(pass === "1234") {
+            localStorage.setItem('slava_auth', 'true');
+            location.reload();
         }
+    }
+
+    function logoutAdmin() {
+        localStorage.removeItem('slava_auth');
+        location.reload();
     }
 
     async function loadFromSupabase() {
@@ -134,12 +141,19 @@
             iconSize: [34, 34], iconAnchor: [17, 17]
         });
         
-        // Draggable разрешен только если isAdmin в сессии (сохраняем в localStorage для простоты)
-        const isActuallyAdmin = isAdmin || localStorage.getItem('is_slava_admin') === 'true';
-        if(isActuallyAdmin) document.getElementById('admin-ui').style.display = 'flex';
-
-        const m = L.marker(p.coords, {icon, draggable: isActuallyAdmin}).addTo(map);
+        const m = L.marker(p.coords, {icon, draggable: isAdmin}).addTo(map);
         
+        // Popup контент
+        let popupHtml = `<div class="popup-menu"><strong>${p.name}</strong>`;
+        if(isAdmin) {
+            popupHtml += `
+                <button class="popup-btn" onclick="openEdit(${index})">Изменить инфо</button>
+                <button class="popup-btn del" onclick="deletePoint(${p.id})">Удалить</button>
+            `;
+        }
+        popupHtml += `</div>`;
+        m.bindPopup(popupHtml);
+
         m.on('dragend', async (e) => {
             const newPos = e.target.getLatLng();
             await fetch(`${SB_URL}/rest/v1/locations?id=eq.${p.id}`, {
@@ -147,68 +161,59 @@
                 headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ coords: newPos })
             });
+            new Audio(COCO_SOUND).play();
         });
 
-        m.on('click', e => { L.DomEvent.stopPropagation(e); currentIndex = index; loadPano(p); handlePanoClick(); });
-    }
-
-    function loadPano(p) {
-        if (viewer) viewer.destroy();
-        viewer = pannellum.viewer('panorama', { 
-            "type": "equirectangular", 
-            "panorama": p.url, 
-            "autoLoad": true,
-            "showZoomCtrl": true
+        m.on('click', e => { 
+            currentIndex = index; 
+            loadPano(p); 
         });
-        document.getElementById('display-title').innerText = p.name;
-        document.getElementById('display-desc').innerText = p.description || "by Slava Lagoykin";
     }
 
-    function takeScreenshot() {
-        const canvas = document.querySelector('.pnlm-render-container canvas');
-        if(!canvas) return;
-        
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const ctx = tempCanvas.getContext('2d');
-        
-        ctx.drawImage(canvas, 0, 0);
-        ctx.font = "bold 30px sans-serif";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "right";
-        ctx.shadowColor = "black";
-        ctx.shadowBlur = 7;
-        ctx.fillText("Slava Lagoykin", tempCanvas.width - 40, tempCanvas.height - 40);
-        
-        const link = document.createElement('a');
-        link.download = `Phangan360_${Date.now()}.png`;
-        link.href = tempCanvas.toDataURL();
-        link.click();
+    function openEdit(idx) {
+        const p = allPoints[idx];
+        document.getElementById('admin-title').innerText = "Редактировать точку";
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('in-name').value = p.name;
+        document.getElementById('in-url').value = p.url;
+        document.getElementById('in-desc').value = p.description;
+        document.getElementById('in-time').value = p.time;
+        openAdmin();
     }
 
-    async function saveToSupabase() {
-        const name = document.getElementById('in-name').value;
-        const url = document.getElementById('in-url').value;
-        if(!name || !url || !clickCoords) return alert("Данные не полны!");
-
-        new Audio(COCO_SOUND).play();
-
-        await fetch(`${SB_URL}/rest/v1/locations`, {
-            method: 'POST',
-            headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ name, url, description: document.getElementById('in-desc').value, coords: clickCoords, time: document.getElementById('in-time').value })
+    async function deletePoint(id) {
+        if(!confirm("Удалить эту точку навсегда?")) return;
+        await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` }
         });
         location.reload();
     }
 
-    function handleMapClick() { document.body.className = 'map-full'; setTimeout(() => { map.invalidateSize(); viewer.resize(); }, 450); }
-    function handlePanoClick() { document.body.className = 'pano-full'; setTimeout(() => { map.invalidateSize(); viewer.resize(); }, 450); }
-    function openAdmin() { document.getElementById('admin-panel').style.display = 'flex'; }
-    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
-    function navigatePano(dir) { currentIndex = (currentIndex + dir + allPoints.length) % allPoints.length; loadPano(allPoints[currentIndex]); }
+    function loadPano(p) {
+        if (viewer) viewer.destroy();
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": true });
+        document.getElementById('display-title').innerText = p.name;
+        document.getElementById('display-desc').innerText = p.description || "by Slava Lagoykin";
+    }
 
-    init();
-</script>
-</body>
-</html>
+    async function saveToSupabase() {
+        const id = document.getElementById('edit-id').value;
+        const name = document.getElementById('in-name').value;
+        const url = document.getElementById('in-url').value;
+        const data = { name, url, description: document.getElementById('in-desc').value, time: document.getElementById('in-time').value };
+
+        if(id) {
+            // Обновление
+            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, {
+                method: 'PATCH',
+                headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+        } else {
+            // Создание новой
+            if(!clickCoords) return alert("Ткни в карту для координат!");
+            data.coords = clickCoords;
+            await fetch(`${SB_URL}/rest/v1/locations`, {
+                method: 'POST',
+                headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-
