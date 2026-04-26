@@ -28,7 +28,6 @@
         #top-info { top: 15px; right: 15px; text-align: right; cursor: pointer; }
         
         .btn-wa { background: #25d366; color: #fff; text-decoration: none; padding: 10px 15px; border-radius: 8px; display: inline-block; font-size: 13px; font-weight: 600; margin-top: 10px; }
-        
         .dot-marker { width: 10px; height: 10px; background: #fff; border: 2px solid #000; border-radius: 50%; }
         
         #admin-panel { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; padding: 40px 25px; overflow-y: auto; }
@@ -44,13 +43,15 @@
         
         <div id="top-info" class="ui-card" onclick="checkAuth()">
             <h2 style="margin:0; font-size:18px; color:var(--accent);">KOH PHANGAN 360</h2>
-            <p id="display-title" style="margin:4px 0 0; font-size:13px; opacity:0.7;">Explore the Island</p>
+            <p id="display-title" style="margin:4px 0 0; font-size:13px; opacity:0.7;">Exploring...</p>
             <div id="wa-wrap"></div>
         </div>
 
         <div id="admin-ui" style="position:absolute; top:15px; left:15px; z-index:2000; display:none;">
             <button class="btn-wa" style="background:var(--accent)" onclick="event.stopPropagation(); openAdmin(null)">+ ADD POINT</button>
         </div>
+
+        <button onclick="event.stopPropagation(); takeScreenshot()" style="position:absolute; bottom:25px; left:20px; z-index:2000; background:rgba(0,0,0,0.5); border:1px solid #444; color:white; width:48px; height:48px; border-radius:50%; font-size:20px; cursor:pointer;">📸</button>
 
         <div style="position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:2000; display:flex; gap:60px;">
             <button style="background:none; border:none; color:white; font-size:40px; cursor:pointer;" onclick="event.stopPropagation(); navigate(-1)">‹</button>
@@ -60,17 +61,13 @@
 </div>
 
 <div id="admin-panel">
-    <h2 id="adm-head">Management</h2>
+    <h2>Management</h2>
     <input type="hidden" id="edit-id">
     <input type="text" id="in-name" placeholder="Name">
     <input type="text" id="in-url" placeholder="URL">
-    <input type="text" id="in-wa" placeholder="WhatsApp (7999...)">
+    <input type="text" id="in-wa" placeholder="WhatsApp">
     <input type="text" id="in-desc" placeholder="Description">
-    <select id="in-time">
-        <option value="day">Day</option>
-        <option value="sunset">Sunset</option>
-        <option value="sunrise">Sunrise</option>
-    </select>
+    <select id="in-time"><option value="day">Day</option><option value="sunset">Sunset</option><option value="sunrise">Sunrise</option></select>
     <button class="btn-wa" style="background:var(--accent); width:100%; padding:20px;" onclick="save()">SAVE</button>
     <button id="del-btn" class="btn-wa" style="background:#ff3b30; width:100%; margin-top:10px; display:none;" onclick="deletePt()">DELETE</button>
     <button class="btn-wa" style="background:none; width:100%; color:#555;" onclick="closeAdmin()">CANCEL</button>
@@ -82,6 +79,8 @@
 <script>
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
+    
+    // Прямая ссылка без токена (Public)
     const START_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG";
 
     let map, viewer, points = [], curIdx = 0, clickCoords = null;
@@ -99,11 +98,17 @@
     function checkAuth() { if(!isAdmin && prompt("Password:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); } }
 
     async function load() {
-        const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
-        const data = await res.json();
-        points = [{id:'fixed', name:'Thong Sala Sunset', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset', wa:'79242551410'}, ...data];
-        renderMarkers();
-        loadPano(points[0]);
+        try {
+            const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+            const data = await res.json();
+            points = [{id: 'fixed', name: 'Starting Sunset', url: START_IMG, coords: {lat: 9.7107, lng: 99.9813}, time: 'sunset'}, ...data];
+            renderMarkers();
+            loadPano(points[0]);
+        } catch(e) { 
+            points = [{id: 'fixed', name: 'Sunset (Offline)', url: START_IMG, coords: {lat: 9.7107, lng: 99.9813}, time: 'sunset'}];
+            renderMarkers();
+            loadPano(points[0]);
+        }
     }
 
     function renderMarkers() {
@@ -112,12 +117,14 @@
             const icon = L.divIcon({ className: `dot-marker`, iconSize: [10, 10] });
             const m = L.marker(p.coords, { icon, draggable: isAdmin && p.id !== 'fixed' }).addTo(map);
             m.on('click', e => { L.DomEvent.stopPropagation(e); curIdx = i; loadPano(p); handlePanoFocus(); if(isAdmin && p.id !== 'fixed') openAdmin(i); });
-            m.on('dragend', async e => {
-                await fetch(`${SB_URL}/rest/v1/locations?id=eq.${p.id}`, {
-                    method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ coords: e.target.getLatLng() })
+            if(isAdmin && p.id !== 'fixed') {
+                m.on('dragend', async e => {
+                    await fetch(`${SB_URL}/rest/v1/locations?id=eq.${p.id}`, {
+                        method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({ coords: e.target.getLatLng() })
+                    });
                 });
-            });
+            }
         });
     }
 
@@ -128,9 +135,50 @@
         document.getElementById('wa-wrap').innerHTML = p.wa ? `<a href="https://wa.me/${p.wa}" class="btn-wa" target="_blank">WhatsApp</a>` : '';
     }
 
+    function takeScreenshot() {
+        const canvas = document.querySelector('.pnlm-render-container canvas');
+        if(!canvas) return;
+        const temp = document.createElement('canvas');
+        temp.width = canvas.width; temp.height = canvas.height;
+        const ctx = temp.getContext('2d');
+        ctx.drawImage(canvas, 0, 0);
+        ctx.font = "30px sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "right";
+        ctx.fillText("Slava Lagoykin", temp.width - 40, temp.height - 40);
+        const link = document.createElement('a'); link.download = 'Phangan360.png'; link.href = temp.toDataURL(); link.click();
+    }
+
     function openAdmin(idx) {
         document.getElementById('admin-panel').style.display = 'flex';
         if(idx !== null) {
             const p = points[idx];
             document.getElementById('edit-id').value = p.id;
-            document.getElementById('in-name').
+            document.getElementById('in-name').value = p.name;
+            document.getElementById('in-url').value = p.url;
+            document.getElementById('in-wa').value = p.wa || '';
+            document.getElementById('del-btn').style.display = 'block';
+        } else {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('del-btn').style.display = 'none';
+        }
+    }
+
+    async function save() {
+        const id = document.getElementById('edit-id').value;
+        const body = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, wa: document.getElementById('in-wa').value, description: document.getElementById('in-desc').value, time: document.getElementById('in-time').value };
+        if(id) {
+            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        } else {
+            body.coords = clickCoords;
+            await fetch(`${SB_URL}/rest/v1/locations`, { method: 'POST', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        }
+        location.reload();
+    }
+
+    function handleMapFocus() { if(window.innerWidth < 1024) document.body.className = 'map-full'; setTimeout(() => { map.invalidateSize(); if(viewer) viewer.resize(); }, 450); }
+    function handlePanoFocus() { if(window.innerWidth < 1024) document.body.className = 'pano-full'; setTimeout(() => { map.invalidateSize(); if(viewer) viewer.resize(); }, 450); }
+    function navigate(dir) { curIdx = (curIdx + dir + points.length) % points.length; loadPano(points[curIdx]); }
+
+    init();
+</script>
+</body>
+</html>
