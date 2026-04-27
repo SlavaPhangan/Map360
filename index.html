@@ -4,65 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KOH PHANGAN 360</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         :root { --accent: #007aff; --bg: #000; --ui: rgba(10, 10, 10, 0.9); --border: rgba(255,255,255,0.1); }
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; background: #000; color: #fff; overflow: hidden; }
         
         /* Заставка с волнами */
-        #intro { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 1.5s; }
-        #intro-bg { position: absolute; inset: 0; background: url('https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG') center/cover; filter: blur(60px); opacity: 0.4; }
-        .logo-wrap { position: relative; text-align: center; z-index: 10; }
-        .logo-wrap h1 { font-size: 26px; letter-spacing: 7px; margin: 0; font-weight: 200; text-transform: uppercase; }
-        .logo-wrap p { font-family: 'Georgia', serif; font-size: 15px; margin: 15px 0 5px 0; opacity: 0.8; font-style: italic; }
-        .waves { width: 100px; height: 15px; margin-top: 5px; }
-        .wave-line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 150; stroke-dashoffset: 150; animation: waveDraw 2.5s forwards ease-out; }
-        .w1 { animation-delay: 1.2s; } .w2 { animation-delay: 1.5s; opacity: 0.6; } .w3 { animation-delay: 1.8s; opacity: 0.3; }
+        #intro { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1.5s ease; }
+        #intro-bg { position: absolute; inset: 0; background: url('https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG') center/cover; filter: blur(30px); opacity: 0.4; }
+       .logo-wrap { position: relative; text-align: center; z-index: 10; }
+       .logo-wrap h1 { font-size: 26px; letter-spacing: 7px; margin: 0; font-weight: 200; text-transform: uppercase; }
+       .logo-wrap p { font-family: 'Georgia', serif; font-size: 15px; margin: 15px 0 5px 0; opacity: 0.8; font-style: italic; }
+       .waves { width: 100px; height: 15px; margin-top: 5px; }
+       .wave-line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 150; stroke-dashoffset: 150; animation: waveDraw 2.5s forwards ease-out; }
+       .w1 { animation-delay: 1.2s; }.w2 { animation-delay: 1.5s; opacity: 0.6; }.w3 { animation-delay: 1.8s; opacity: 0.3; }
         @keyframes waveDraw { to { stroke-dashoffset: 0; } }
 
-        /* Контейнер */
-        #main-container { display: flex; height: 100vh; width: 100vw; flex-direction: column-reverse; opacity: 0; transition: 2s ease; }
+        /* Контейнер и лейаут */
+        #main-container { display: flex; height: 100vh; width: 100vw; flex-direction: column-reverse; opacity: 0; transition: opacity 2s ease; }
         @media (min-width: 1024px) { 
             #main-container { flex-direction: row; }
-            #map-section { width: 30%; height: 100% !important; border-right: 1px solid var(--border); }
-            #pano-section { width: 70%; height: 100% !important; }
-            .focus-map #map-section { width: 80% !important; }
-            .focus-map #pano-section { width: 20% !important; }
-            .focus-pano #map-section { width: 20% !important; }
-            .focus-pano #pano-section { width: 80% !important; }
+            #map-section { width: 30%; height: 100%!important; border-right: 1px solid var(--border); }
+            #pano-section { width: 70%; height: 100%!important; }
+           .focus-map #map-section { width: 80%!important; }
+           .focus-map #pano-section { width: 20%!important; }
+           .focus-pano #map-section { width: 20%!important; }
+           .focus-pano #pano-section { width: 80%!important; }
         }
 
-        #map-section, #pano-section { width: 100%; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1); position: relative; }
+        /* Анимация размеров: transitionend будет отслеживать эти параметры */
+        #map-section, #pano-section { width: 100%; transition: height 0.8s cubic-bezier(0.65, 0, 0.35, 1), width 0.8s cubic-bezier(0.65, 0, 0.35, 1); position: relative; }
         #map-section { height: 40%; }
         #pano-section { height: 60%; background: #000; }
         
-        /* Состояния фокуса (только при явном нажатии) */
-        .focus-map #map-section { height: 80%; }
-        .focus-map #pano-section { height: 20%; }
-        .focus-pano #map-section { height: 20%; }
-        .focus-pano #pano-section { height: 80%; }
+       .focus-map #map-section { height: 80%; }
+       .focus-map #pano-section { height: 20%; }
+       .focus-pano #map-section { height: 20%; }
+       .focus-pano #pano-section { height: 80%; }
 
         #map, #panorama { width: 100%; height: 100%; }
 
-        /* Маркеры */
-        .custom-marker { display: flex; flex-direction: column; align-items: center; }
-        .marker-disk { width: 26px; height: 26px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .marker-label { font-size: 10px; color: #fff; text-shadow: 0 1px 4px #000; margin-top: 5px; white-space: nowrap; transition: 0.4s; opacity: 0; }
-        .zoom-high .marker-label { opacity: 1; }
+        /* Маркеры Leaflet */
+       .custom-marker { display: flex; flex-direction: column; align-items: center; }
+       .marker-disk { width: 26px; height: 26px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
 
         /* UI и Соцсети */
-        .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 18px; padding: 15px; }
+       .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 18px; padding: 15px; }
         #top-info { top: 20px; right: 20px; text-align: right; }
+       .social-block { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
+       .soc-btn { width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
+       .wa-btn { background: #25d366; }
+       .ig-btn { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
         
-        .social-block { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
-        .soc-btn { width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
-        .wa-btn { background: #25d366; }
-        .ig-btn { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-        
-        /* Админ-панель */
-        #admin-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 100%; max-width: 380px; background: #0a0a0a; z-index: 5000; display: none; flex-direction: column; padding: 30px; border-left: 1px solid var(--border); overflow-y: auto; }
+        /* Админ-панель и форма логина */
+        #admin-panel, #login-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 100%; max-width: 380px; background: #0a0a0a; z-index: 5000; display: none; flex-direction: column; padding: 30px; border-left: 1px solid var(--border); overflow-y: auto; }
         input, select { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 12px; }
+        button.btn-primary { background:var(--accent); color:#fff; border:none; padding:15px; border-radius:12px; width:100%; cursor: pointer; font-weight: bold;}
+        button.btn-secondary { background:none; border:none; color:#666; margin-top:15px; width:100%; cursor: pointer;}
     </style>
 </head>
 <body class="focus-pano">
@@ -81,10 +85,10 @@
 </div>
 
 <div id="main-container">
-    <div id="map-section" onmousedown="setFocus('map')">
+    <div id="map-section">
         <div id="map"></div>
     </div>
-    <div id="pano-section" onmousedown="setFocus('pano')">
+    <div id="pano-section">
         <div id="panorama"></div>
         <div id="top-info" class="ui-card">
             <h2 id="adm-trigger" style="margin:0; font-size:18px; color:var(--accent); cursor:pointer;">KOH PHANGAN 360</h2>
@@ -97,41 +101,184 @@
     </div>
 </div>
 
+<div id="login-panel">
+    <h3>Admin Login</h3>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button class="btn-primary" onclick="handleLogin()">LOGIN</button>
+    <button class="btn-secondary" onclick="document.getElementById('login-panel').style.display='none'">CANCEL</button>
+</div>
+
 <div id="admin-panel">
     <h3>Point Management</h3>
     <input type="hidden" id="edit-id">
     <input type="text" id="in-name" placeholder="Name">
     <input type="text" id="in-url" placeholder="Supabase URL">
     <select id="in-time"><option value="day">Day</option><option value="sunset">Sunset</option><option value="sunrise">Sunrise</option></select>
-    <button style="background:var(--accent); color:#fff; border:none; padding:15px; border-radius:12px; width:100%;" onclick="save()">SAVE</button>
-    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px; width:100%;">CLOSE</button>
+    <button class="btn-primary" onclick="saveData()">SAVE</button>
+    <button class="btn-secondary" style="color: #ff453a;" onclick="handleLogout()">LOGOUT</button>
+    <button class="btn-secondary" onclick="document.getElementById('admin-panel').style.display='none'">CLOSE</button>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
-
 <script>
+    // 1. Настройка Supabase клиента
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
+    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
     
-    let map, viewer, points = [], curIdx = 0, clickCoords = null, secret = 0;
-    let isAdmin = localStorage.getItem('slava_admin') === 'true';
+    let map, viewer;
+    let points =;
+    let isAdmin = false;
 
-    window.onload = () => {
+    // 2. Детерминированная асинхронная инициализация
+    window.addEventListener('DOMContentLoaded', async () => {
+        // Проверяем статус логина
+        await checkSession();
+        // Загружаем данные из БД ДО инициализации движков
+        await loadPointsFromDB();
+        
+        initLeafletMap();
+        initPannellumViewer();
+
+        // Показываем интерфейс только после готовности движков
+        const intro = document.getElementById('intro');
+        const main = document.getElementById('main-container');
+        
         setTimeout(() => {
-            document.getElementById('intro').style.opacity = '0';
-            document.getElementById('main-container').style.opacity = '1';
-            setTimeout(() => { init(); }, 600);
-            setTimeout(() => document.getElementById('intro').style.display = 'none', 2000);
-        }, 4000);
-    };
+            intro.style.opacity = '0';
+            main.style.opacity = '1';
+        }, 500);
 
+        intro.addEventListener('transitionend', () => {
+            intro.style.display = 'none';
+        }, { once: true });
+    });
+
+    // 3. Управление фокусом и стабильный ресайз
     function setFocus(mode) {
-        // Мы используем onmousedown, чтобы не мешать drag-событиям карты
-        document.body.className = (mode === 'map') ? 'focus-map' : 'focus-pano';
-        setTimeout(() => { if(map) map.invalidateSize(); if(viewer) viewer.resize(); }, 850);
+        document.body.className = (mode === 'map')? 'focus-map' : 'focus-pano';
     }
 
-    async function init() {
+    const mapSec = document.getElementById('map-section');
+    const panoSec = document.getElementById('pano-section');
+
+    function resizeEngines(e) {
+        // Выполняем ресайз только когда завершается анимация самого контейнера
+        if (e.target === mapSec |
+
+| e.target === panoSec) {
+            if (map) map.invalidateSize();
+            if (viewer) viewer.resize();
+        }
+    }
+
+    mapSec.addEventListener('transitionend', resizeEngines);
+    panoSec.addEventListener('transitionend', resizeEngines);
+
+    // 4. Получение данных
+    async function loadPointsFromDB() {
+        // ВНИМАНИЕ: Замените 'locations' на вашу таблицу с маркерами!
+        const { data, error } = await supabase.from('locations').select('*');
+        if (error) {
+            console.warn("Failed to fetch points or table missing:", error.message);
+            points =; 
+        } else {
+            points = data;
+        }
+    }
+
+    // 5. Инициализация Leaflet
+    function initLeafletMap() {
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 12);
-        L.tileLayer('https://{s}.
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Используем встроенные события Leaflet для захвата фокуса вместо onmousedown на контейнере
+        map.on('mousedown', () => setFocus('map'));
+
+        // Отрисовка маркеров из БД
+        points.forEach(point => {
+            if(point.lat && point.lng) {
+                const marker = L.marker([point.lat, point.lng]).addTo(map);
+                marker.on('click', () => {
+                    setFocus('pano');
+                    document.getElementById('cur-name').innerText = point.name |
+
+| "Island Experience";
+                    if (viewer) viewer.loadScene(point.id);
+                });
+            }
+        });
+    }
+
+    // 6. Инициализация WebGL Pannellum
+    function initPannellumViewer() {
+        let scenesConfig = {};
+        
+        // Преобразуем массив точек в конфигурацию сцен
+        points.forEach(point => {
+            scenesConfig[point.id] = {
+                type: "equirectangular",
+                panorama: point.url,
+                autoLoad: true
+            };
+        });
+
+        const initialSceneId = points.length > 0? points.id : '';
+
+        // Создаем WebGL контекст строго ОДИН раз
+        viewer = pannellum.viewer('panorama', {
+            default: {
+                firstScene: initialSceneId,
+                sceneFadeDuration: 1000, // Эффект плавного кроссфейда
+                showControls: false
+            },
+            scenes: scenesConfig
+        });
+
+        // Захват фокуса при клике по WebGL холсту
+        document.getElementById('panorama').addEventListener('mousedown', () => setFocus('pano'));
+    }
+
+    // 7. Логика авторизации Supabase
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        isAdmin =!!session;
+    }
+
+    document.getElementById('adm-trigger').addEventListener('click', () => {
+        if (isAdmin) {
+            document.getElementById('admin-panel').style.display = 'flex';
+        } else {
+            document.getElementById('login-panel').style.display = 'flex';
+        }
+    });
+
+    async function handleLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            isAdmin = true;
+            document.getElementById('login-panel').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'flex';
+        }
+    }
+
+    async function handleLogout() {
+        await supabase.auth.signOut();
+        isAdmin = false;
+        document.getElementById('admin-panel').style.display = 'none';
+        alert("Logged out successfully");
+    }
+
+    // Заглушка для сохранения
+    async function saveData() {
+        alert("Data layer requires specific database schema. Ensure RLS is active.");
+    }
+</script>
+</body>
+</html>
