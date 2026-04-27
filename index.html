@@ -13,8 +13,9 @@
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; background: #000; color: #fff; overflow: hidden; }
         
         /* Заставка */
-        #intro { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 1.5s; }
+        #intro { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 1.5s; pointer-events: none; }
         #intro-bg { position: absolute; inset: 0; background: url('https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG') center/cover; filter: blur(60px); opacity: 0.4; }
+        
         .logo-wrap { position: relative; text-align: center; z-index: 10; }
         .logo-wrap h1 { font-size: 26px; letter-spacing: 7px; margin: 0; font-weight: 200; text-transform: uppercase; }
         .logo-wrap p { font-family: 'Georgia', serif; font-size: 15px; margin: 15px 0 5px 0; opacity: 0.8; font-style: italic; }
@@ -27,46 +28,38 @@
 
         /* Контейнер */
         #main-container { display: flex; height: 100vh; width: 100vw; flex-direction: column-reverse; opacity: 0; transition: 2s ease; }
-        
+        @media (min-width: 1024px) { 
+            #main-container { flex-direction: row; }
+            #map-section { width: 30%; height: 100% !important; border-right: 1px solid var(--border); }
+            #pano-section { width: 70%; height: 100% !important; }
+            .focus-map #map-section { width: 80% !important; } .focus-map #pano-section { width: 20% !important; }
+            .focus-pano #map-section { width: 20% !important; } .focus-pano #pano-section { width: 80% !important; }
+        }
+
         #map-section, #pano-section { width: 100%; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1); position: relative; }
         #map-section { height: 40%; border-top: 1px solid var(--border); }
         #pano-section { height: 60%; background: #000; }
         
-        /* 80/20 Focus */
-        .focus-map #map-section { height: 80%; }
-        .focus-map #pano-section { height: 20%; }
-        .focus-pano #map-section { height: 20%; }
-        .focus-pano #pano-section { height: 80%; }
-
-        @media (min-width: 1024px) { 
-            #main-container { flex-direction: row; }
-            #map-section { width: 30%; height: 100% !important; border-right: 1px solid var(--border); border-top: none; }
-            #pano-section { width: 70%; height: 100% !important; }
-            .focus-map #map-section { width: 80% !important; height: 100% !important; }
-            .focus-map #pano-section { width: 20% !important; height: 100% !important; }
-            .focus-pano #map-section { width: 20% !important; height: 100% !important; }
-            .focus-pano #pano-section { width: 80% !important; height: 100% !important; }
-        }
+        .focus-map #map-section { height: 80%; } .focus-map #pano-section { height: 20%; }
+        .focus-pano #map-section { height: 20%; } .focus-pano #pano-section { height: 80%; }
 
         #map, #panorama { width: 100%; height: 100%; }
-
-        /* Дизайн маркеров */
         .custom-marker { display: flex; flex-direction: column; align-items: center; }
-        .marker-disk { width: 26px; height: 26px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .marker-disk { width: 28px; height: 28px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); font-size: 14px; }
+        .marker-label { font-size: 10px; color: #fff; text-shadow: 0 1px 4px #000; margin-top: 6px; white-space: nowrap; transition: 0.4s; opacity: 0; font-weight: 500; }
+        .zoom-high .marker-label { opacity: 1; }
 
         /* UI */
-        .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 18px; padding: 15px; }
+        .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 18px; padding: 14px 20px; }
         #top-info { top: 20px; right: 20px; text-align: right; }
-        
         .social-block { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
         .soc-btn { width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px; transition: 0.3s; }
         .wa-btn { background: #25d366; }
-        .ig-btn { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-        
-        /* Админ */
+        .ig-btn { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); }
+
         #admin-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 100%; max-width: 380px; background: #0a0a0a; z-index: 5000; display: none; flex-direction: column; padding: 30px; border-left: 1px solid var(--border); overflow-y: auto; }
         input, select { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 12px; }
-        .btn-save { background: var(--accent); color: #fff; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .check-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; cursor: pointer; font-size: 13px; opacity: 0.8; }
     </style>
 </head>
 <body class="focus-pano">
@@ -85,14 +78,14 @@
 </div>
 
 <div id="main-container">
-    <div id="map-section" onclick="setFocus('map')">
+    <div id="map-section" onmousedown="setFocus('map')">
         <div id="map"></div>
     </div>
-    <div id="pano-section" onclick="setFocus('pano')">
+    <div id="pano-section" onmousedown="setFocus('pano')">
         <div id="panorama"></div>
         <div id="top-info" class="ui-card">
             <h2 id="adm-trigger" style="margin:0; font-size:18px; color:var(--accent); cursor:pointer;">KOH PHANGAN 360</h2>
-            <p id="cur-name" style="margin:4px 0 0; font-size:11px; opacity:0.6;">Island Experience</p>
+            <p id="cur-name" style="margin:4px 0 0; font-size:11px; opacity:0.6;">Exploring Phangan...</p>
             <div class="social-block">
                 <a href="https://wa.me/995511443298" class="soc-btn wa-btn" target="_blank">💬</a>
                 <a href="https://www.instagram.com/slavalagoykin/" class="soc-btn ig-btn" target="_blank">📸</a>
@@ -102,15 +95,15 @@
 </div>
 
 <div id="admin-panel">
-    <h3 style="margin-top:0">Point Management</h3>
+    <h3>Point Management</h3>
     <input type="hidden" id="edit-id">
-    <label style="font-size:10px; opacity:0.5;">NAME</label><input type="text" id="in-name">
-    <label style="font-size:10px; opacity:0.5;">IMAGE URL</label><input type="text" id="in-url">
-    <label style="font-size:10px; opacity:0.5;">VIBE</label>
+    <input type="text" id="in-name" placeholder="Name">
+    <input type="text" id="in-url" placeholder="Supabase URL">
     <select id="in-time"><option value="day">☀️ Day</option><option value="sunset">🌅 Sunset</option><option value="sunrise">🌄 Sunrise</option></select>
-    <button class="btn-save" onclick="save()">SAVE TO CLOUD</button>
+    <label class="check-row"><input type="checkbox" id="in-main"> <span>Set as Landing Photo</span></label>
+    <button style="background:var(--accent); color:#fff; border:none; padding:15px; border-radius:12px; width:100%; font-weight:bold; cursor:pointer;" onclick="save()">SAVE TO CLOUD</button>
     <button id="del-btn" style="background:none; border:1px solid #ff3b30; color:#ff3b30; margin-top:10px; padding:10px; border-radius:10px; width:100%; display:none;" onclick="deleteSpot()">DELETE</button>
-    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px; width:100%;">CLOSE</button>
+    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px; width:100%; cursor:pointer;">CLOSE</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -119,17 +112,17 @@
 <script>
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
-    const START_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG";
+    const FALLBACK = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG";
 
-    let map, viewer, points = [], curIdx = 0, clickCoords = null, secret = 0;
+    let map, viewer, points = [], clickCoords = null, secret = 0;
     let isAdmin = localStorage.getItem('slava_admin') === 'true';
 
     window.onload = () => {
+        init();
         setTimeout(() => {
             document.getElementById('intro').style.opacity = '0';
             document.getElementById('main-container').style.opacity = '1';
-            setTimeout(() => { init(); }, 600);
-            setTimeout(() => document.getElementById('intro').style.display = 'none', 2000);
+            setTimeout(() => { document.getElementById('intro').style.display = 'none'; if(map) map.invalidateSize(); }, 1500);
         }, 4000);
     };
 
@@ -141,13 +134,10 @@
     async function init() {
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+        map.on('zoomend', () => document.getElementById('map').className = map.getZoom() >= 13 ? 'zoom-high' : '');
 
         document.getElementById('adm-trigger').onclick = () => {
-            secret++;
-            if(secret >= 3) {
-                if(prompt("Pass:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); }
-                secret = 0;
-            }
+            secret++; if(secret >= 3) { if(prompt("Pass:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); } secret = 0; }
         };
 
         await load();
@@ -157,25 +147,64 @@
     async function load() {
         try {
             const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
-            const data = await res.json();
-            // Сначала вшитый закат, потом твои точки из базы
-            points = [{id:'fixed', name:'Sunset Welcome', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset'}, ...data];
+            points = await res.json();
+            
+            // Загружаем панораму: сначала с галочкой is_main, если нет - первую в списке, если список пуст - FALLBACK
+            const mainSpot = points.find(p => p.is_main) || points[0] || {name: "Welcome", url: FALLBACK};
             
             points.forEach((p, i) => {
                 const sym = p.time === 'sunset' ? '🌅' : (p.time === 'sunrise' ? '🌄' : '☀️');
-                const icon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-disk">${sym}</div>`, iconSize: [30, 30] });
-                const m = L.marker(p.coords, { icon, draggable: isAdmin && p.id !== 'fixed' }).addTo(map);
-                m.on('click', (e) => { 
-                    L.DomEvent.stopPropagation(e); 
-                    curIdx = i; 
-                    loadPano(p); 
-                    setFocus('pano');
-                    if(isAdmin && p.id !== 'fixed') openAdmin(i); 
-                });
+                const icon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-disk">${sym}</div><div class="marker-label">${p.name}</div>`, iconSize: [30, 45] });
+                const m = L.marker(p.coords, { icon, draggable: isAdmin }).addTo(map);
+                m.on('click', (e) => { L.DomEvent.stopPropagation(e); loadPano(p); setFocus('pano'); if(isAdmin) openAdmin(i); });
             });
-            loadPano(points[0]);
-        } catch(e) { loadPano({name:'Starting...', url:START_IMG}); }
+            
+            loadPano(mainSpot);
+        } catch(e) { loadPano({name: "Phangan 360", url: FALLBACK}); }
     }
 
     function loadPano(p) {
         if(viewer) viewer.destroy();
+        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": false, "crossOrigin": "anonymous" });
+        document.getElementById('cur-name').innerText = p.name;
+    }
+
+    function openAdmin(idx) {
+        document.getElementById('admin-panel').style.display = 'flex';
+        const del = document.getElementById('del-btn');
+        if(idx !== null) {
+            const p = points[idx];
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('in-name').value = p.name;
+            document.getElementById('in-url').value = p.url;
+            document.getElementById('in-time').value = p.time || 'day';
+            document.getElementById('in-main').checked = p.is_main || false;
+            del.style.display = 'block';
+        } else {
+            document.getElementById('edit-id').value = '';
+            document.querySelectorAll('#admin-panel input[type="text"]').forEach(i => i.value = '');
+            document.getElementById('in-main').checked = false;
+            del.style.display = 'none';
+        }
+    }
+
+    async function save() {
+        const id = document.getElementById('edit-id').value;
+        const isMain = document.getElementById('in-main').checked;
+        const data = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, time: document.getElementById('in-time').value, is_main: isMain };
+
+        if(isMain) {
+            await fetch(`${SB_URL}/rest/v1/locations?is_main=eq.true`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ is_main: false }) });
+        }
+
+        if(id) {
+            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(data) });
+        } else {
+            if(!clickCoords) return alert("Tap map first!");
+            data.coords = clickCoords;
+            await fetch(`${SB_URL}/rest/v1/locations`, { method: 'POST', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(data) });
+        }
+        location.reload();
+    }
+
+    function closeAdmin() { document.getElementById('admin-panel
