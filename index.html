@@ -19,7 +19,7 @@
         .logo-wrap h1 { font-size: 26px; letter-spacing: 7px; margin: 0; font-weight: 200; text-transform: uppercase; }
         .logo-wrap p { font-family: 'Georgia', serif; font-size: 15px; margin: 15px 0 5px 0; opacity: 0.8; font-style: italic; }
         
-        /* Финальные волны Славы */
+        /* Волны Slava Lagoykin */
         .waves { width: 100px; height: 15px; margin-top: 5px; }
         .wave-line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 150; stroke-dashoffset: 150; animation: waveDraw 2.5s forwards ease-out; }
         .w1 { animation-delay: 1.2s; } .w2 { animation-delay: 1.5s; opacity: 0.6; } .w3 { animation-delay: 1.8s; opacity: 0.3; }
@@ -27,44 +27,46 @@
 
         /* Контейнер */
         #main-container { display: flex; height: 100vh; width: 100vw; flex-direction: column-reverse; opacity: 0; transition: 2s ease; }
-        @media (min-width: 1024px) { 
-            #main-container { flex-direction: row; }
-            #map-section { width: 30%; height: 100% !important; border-right: 1px solid var(--border); }
-            #pano-section { width: 70%; height: 100% !important; }
-            .focus-map #map-section { width: 80% !important; }
-            .focus-map #pano-section { width: 20% !important; }
-            .focus-pano #map-section { width: 20% !important; }
-            .focus-pano #pano-section { width: 80% !important; }
-        }
-
+        
         #map-section, #pano-section { width: 100%; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1); position: relative; }
-        #map-section { height: 40%; }
+        #map-section { height: 40%; border-top: 1px solid var(--border); }
         #pano-section { height: 60%; background: #000; }
         
-        /* Состояния фокуса (80/20) */
+        /* 80/20 Focus */
         .focus-map #map-section { height: 80%; }
         .focus-map #pano-section { height: 20%; }
         .focus-pano #map-section { height: 20%; }
         .focus-pano #pano-section { height: 80%; }
 
+        @media (min-width: 1024px) { 
+            #main-container { flex-direction: row; }
+            #map-section { width: 30%; height: 100% !important; border-right: 1px solid var(--border); border-top: none; }
+            #pano-section { width: 70%; height: 100% !important; }
+            .focus-map #map-section { width: 80% !important; height: 100% !important; }
+            .focus-map #pano-section { width: 20% !important; height: 100% !important; }
+            .focus-pano #map-section { width: 20% !important; height: 100% !important; }
+            .focus-pano #pano-section { width: 80% !important; height: 100% !important; }
+        }
+
         #map, #panorama { width: 100%; height: 100%; }
 
-        /* Маркеры */
+        /* Дизайн маркеров */
         .custom-marker { display: flex; flex-direction: column; align-items: center; }
         .marker-disk { width: 26px; height: 26px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
 
-        /* UI и Соцсети */
+        /* UI */
         .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 18px; padding: 15px; }
         #top-info { top: 20px; right: 20px; text-align: right; }
         
         .social-block { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
-        .soc-btn { width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
+        .soc-btn { width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px; transition: 0.3s; }
         .wa-btn { background: #25d366; }
         .ig-btn { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
         
-        /* Админ-панель */
+        /* Админ */
         #admin-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 100%; max-width: 380px; background: #0a0a0a; z-index: 5000; display: none; flex-direction: column; padding: 30px; border-left: 1px solid var(--border); overflow-y: auto; }
         input, select { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 12px; width: 100%; box-sizing: border-box; margin-bottom: 12px; }
+        .btn-save { background: var(--accent); color: #fff; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body class="focus-pano">
@@ -83,10 +85,10 @@
 </div>
 
 <div id="main-container">
-    <div id="map-section" onmousedown="setFocus('map')">
+    <div id="map-section" onclick="setFocus('map')">
         <div id="map"></div>
     </div>
-    <div id="pano-section" onmousedown="setFocus('pano')">
+    <div id="pano-section" onclick="setFocus('pano')">
         <div id="panorama"></div>
         <div id="top-info" class="ui-card">
             <h2 id="adm-trigger" style="margin:0; font-size:18px; color:var(--accent); cursor:pointer;">KOH PHANGAN 360</h2>
@@ -100,13 +102,15 @@
 </div>
 
 <div id="admin-panel">
-    <h3>Point Management</h3>
+    <h3 style="margin-top:0">Point Management</h3>
     <input type="hidden" id="edit-id">
-    <input type="text" id="in-name" placeholder="Name">
-    <input type="text" id="in-url" placeholder="Supabase URL">
-    <select id="in-time"><option value="day">Day</option><option value="sunset">Sunset</option><option value="sunrise">Sunrise</option></select>
-    <button style="background:var(--accent); color:#fff; border:none; padding:15px; border-radius:12px; width:100%; cursor:pointer;" onclick="save()">SAVE</button>
-    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px; width:100%; cursor:pointer;">CLOSE</button>
+    <label style="font-size:10px; opacity:0.5;">NAME</label><input type="text" id="in-name">
+    <label style="font-size:10px; opacity:0.5;">IMAGE URL</label><input type="text" id="in-url">
+    <label style="font-size:10px; opacity:0.5;">VIBE</label>
+    <select id="in-time"><option value="day">☀️ Day</option><option value="sunset">🌅 Sunset</option><option value="sunrise">🌄 Sunrise</option></select>
+    <button class="btn-save" onclick="save()">SAVE TO CLOUD</button>
+    <button id="del-btn" style="background:none; border:1px solid #ff3b30; color:#ff3b30; margin-top:10px; padding:10px; border-radius:10px; width:100%; display:none;" onclick="deleteSpot()">DELETE</button>
+    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px; width:100%;">CLOSE</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -115,7 +119,8 @@
 <script>
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
-    
+    const START_IMG = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG";
+
     let map, viewer, points = [], curIdx = 0, clickCoords = null, secret = 0;
     let isAdmin = localStorage.getItem('slava_admin') === 'true';
 
@@ -129,7 +134,6 @@
     };
 
     function setFocus(mode) {
-        // Меняем фокус только если это не клик по маркеру или кнопке
         document.body.className = (mode === 'map') ? 'focus-map' : 'focus-pano';
         setTimeout(() => { if(map) map.invalidateSize(); if(viewer) viewer.resize(); }, 850);
     }
@@ -151,54 +155,27 @@
     }
 
     async function load() {
-        const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
-        points = await res.json();
-        points.forEach((p, i) => {
-            const sym = p.time === 'sunset' ? '🌅' : (p.time === 'sunrise' ? '🌄' : '☀️');
-            const icon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-disk">${sym}</div>`, iconSize: [30, 30] });
-            const m = L.marker(p.coords, { icon, draggable: isAdmin }).addTo(map);
-            m.on('click', (e) => { 
-                L.DomEvent.stopPropagation(e); 
-                curIdx = i; 
-                loadPano(p); 
-                setFocus('pano');
-                if(isAdmin) openAdmin(i); 
+        try {
+            const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+            const data = await res.json();
+            // Сначала вшитый закат, потом твои точки из базы
+            points = [{id:'fixed', name:'Sunset Welcome', url:START_IMG, coords:{lat:9.7107, lng:99.9813}, time:'sunset'}, ...data];
+            
+            points.forEach((p, i) => {
+                const sym = p.time === 'sunset' ? '🌅' : (p.time === 'sunrise' ? '🌄' : '☀️');
+                const icon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-disk">${sym}</div>`, iconSize: [30, 30] });
+                const m = L.marker(p.coords, { icon, draggable: isAdmin && p.id !== 'fixed' }).addTo(map);
+                m.on('click', (e) => { 
+                    L.DomEvent.stopPropagation(e); 
+                    curIdx = i; 
+                    loadPano(p); 
+                    setFocus('pano');
+                    if(isAdmin && p.id !== 'fixed') openAdmin(i); 
+                });
             });
-        });
-        if(points.length) loadPano(points[0]);
+            loadPano(points[0]);
+        } catch(e) { loadPano({name:'Starting...', url:START_IMG}); }
     }
 
     function loadPano(p) {
         if(viewer) viewer.destroy();
-        viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": false, "crossOrigin": "anonymous" });
-        document.getElementById('cur-name').innerText = p.name;
-    }
-
-    function openAdmin(idx) {
-        document.getElementById('admin-panel').style.display = 'flex';
-        if(idx !== null) {
-            const p = points[idx];
-            document.getElementById('edit-id').value = p.id;
-            document.getElementById('in-name').value = p.name;
-            document.getElementById('in-url').value = p.url;
-        } else {
-            document.getElementById('edit-id').value = '';
-        }
-    }
-
-    async function save() {
-        const id = document.getElementById('edit-id').value;
-        const data = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, time: document.getElementById('in-time').value };
-        if(id) {
-            await fetch(`${SB_URL}/rest/v1/locations?id=eq.${id}`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(data) });
-        } else {
-            data.coords = clickCoords;
-            await fetch(`${SB_URL}/rest/v1/locations`, { method: 'POST', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(data) });
-        }
-        location.reload();
-    }
-
-    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
-</script>
-</body>
-</html>
