@@ -10,7 +10,6 @@
         :root { --accent: #007aff; --bg: #000; --ui: rgba(10, 10, 10, 0.9); --border: rgba(255,255,255,0.1); }
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; height: 100vh; background: #000; color: #fff; overflow: hidden; }
         
-        /* Интро с динамическим блюром */
         #intro { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 1.5s ease-in-out; }
         #intro-bg { position: absolute; inset: 0; background: url('https://gtbjgvjcmxuwsbkwoxsr.supabase.co/storage/v1/object/public/360%20-10/sunset%20Thong%20Sala.JPG') center/cover; filter: blur(80px); opacity: 0.4; }
         
@@ -34,27 +33,26 @@
         .started #map { height: 35%; }
         #panorama-container { width: 100%; height: 100%; position: relative; background: #000; }
 
-        /* Маркеры */
         .custom-marker { display: flex; flex-direction: column; align-items: center; }
-        .marker-disk { width: 28px; height: 28px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .marker-disk { width: 28px; height: 28px; background: rgba(0,0,0,0.8); border: 1.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .marker-label { font-size: 10px; color: #fff; text-shadow: 0 1px 4px #000; margin-top: 6px; white-space: nowrap; transition: 0.4s; opacity: 0; font-weight: 500; }
         .zoom-high .marker-label { opacity: 1; }
 
-        /* UI */
         .ui-card { position: absolute; z-index: 2000; background: var(--ui); backdrop-filter: blur(30px); border: 1px solid var(--border); border-radius: 18px; padding: 14px 20px; }
-        #top-info { top: 20px; right: 20px; text-align: right; min-width: 150px; }
+        #top-info { top: 20px; right: 20px; text-align: right; }
         
-        #admin-controls { position: absolute; bottom: 20px; left: 20px; z-index: 1000; display: none; gap: 10px; }
+        #admin-controls { position: absolute; bottom: 20px; left: 20px; z-index: 1000; display: none; }
         .btn-add { background: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; }
-        .btn-add:active { transform: scale(0.95); }
 
-        /* Панель админа */
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2000; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 60px; cursor: pointer; transition: 0.3s; padding: 20px; }
+        .nav-btn:hover { color: #fff; }
+        .btn-prev { left: 10px; }
+        .btn-next { right: 10px; }
+
         #admin-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 100%; max-width: 400px; background: #0f0f0f; z-index: 5000; display: none; flex-direction: column; padding: 30px; border-left: 1px solid var(--border); overflow-y: auto; }
-        .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 11px; opacity: 0.5; margin-bottom: 5px; text-transform: uppercase; }
-        input, select { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; }
+        input, select { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
         .check-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; cursor: pointer; }
-        .check-row input { width: auto; }
     </style>
 </head>
 <body>
@@ -74,42 +72,32 @@
 
 <div id="main-container">
     <div id="map">
-        <div id="admin-controls"><button class="btn-add" id="add-trigger">ADD NEW SPOT</button></div>
+        <div id="admin-controls"><button class="btn-add" onclick="alert('Now tap on the map to add a point')">+ NEW SPOT</button></div>
     </div>
     <div id="panorama-container">
         <div id="panorama"></div>
         <div id="top-info" class="ui-card">
             <h2 id="adm-trigger" style="margin:0; font-size:18px; color:var(--accent); cursor:pointer;">KOH PHANGAN 360</h2>
-            <p id="cur-spot-name" style="margin:4px 0 0; font-size:11px; opacity:0.6;">Island View</p>
+            <p id="cur-spot-name" style="margin:4px 0 0; font-size:11px; opacity:0.6;">Island Discovery</p>
             <div id="wa-container"></div>
         </div>
+        <button class="nav-btn btn-prev" onclick="event.stopPropagation(); navigate(-1)">‹</button>
+        <button class="nav-btn btn-next" onclick="event.stopPropagation(); navigate(1)">›</button>
     </div>
 </div>
 
 <div id="admin-panel">
-    <h3 style="margin-top:0">Spot Manager</h3>
+    <h3>Point Management</h3>
     <input type="hidden" id="edit-id">
-    
-    <div class="form-group"><label>Name</label><input type="text" id="in-name" placeholder="Sea View Villa"></div>
-    <div class="form-group"><label>Supabase URL</label><input type="text" id="in-url"></div>
-    <div class="form-group"><label>WhatsApp</label><input type="text" id="in-wa" placeholder="79001234567"></div>
-    <div class="form-group">
-        <label>Time</label>
-        <select id="in-time">
-            <option value="day">☀️ Day</option>
-            <option value="sunset">🌅 Sunset</option>
-            <option value="sunrise">🌄 Sunrise</option>
-        </select>
-    </div>
-    
-    <label class="check-row">
-        <input type="checkbox" id="in-main"> 
-        <span>Set as Landing (Main) Photo</span>
-    </label>
-
-    <button class="btn-add" style="width:100%; padding:18px;" onclick="save()">SYNC TO CLOUD</button>
-    <button id="del-btn" style="background:none; border:1px solid #ff3b30; color:#ff3b30; width:100%; padding:12px; margin-top:10px; border-radius:10px; display:none;" onclick="deleteSpot()">DELETE SPOT</button>
-    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px;">DISMISS</button>
+    <label>Name</label><input type="text" id="in-name">
+    <label>URL</label><input type="text" id="in-url">
+    <label>WhatsApp</label><input type="text" id="in-wa">
+    <label>Time</label>
+    <select id="in-time"><option value="day">☀️ Day</option><option value="sunset">🌅 Sunset</option><option value="sunrise">🌄 Sunrise</option></select>
+    <label class="check-row"><input type="checkbox" id="in-main"> <span>Set as Landing Photo</span></label>
+    <button class="btn-add" style="width:100%; padding:18px;" onclick="save()">SAVE</button>
+    <button id="del-btn" style="background:none; border:1px solid #ff3b30; color:#ff3b30; width:100%; padding:12px; margin-top:10px; border-radius:10px; display:none;" onclick="deleteSpot()">DELETE</button>
+    <button onclick="closeAdmin()" style="background:none; border:none; color:#444; margin-top:20px;">CANCEL</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -119,17 +107,14 @@
     const SB_URL = "https://gtbjgvjcmxuwsbkwoxsr.supabase.co";
     const SB_KEY = "sb_publishable_q3-RdBxHFY0kcpfrNTJ0-w_2E14iJhf";
     
-    let map, viewer, points = [], clickCoords = null, secret = 0;
+    let map, viewer, points = [], curIdx = 0, clickCoords = null, secret = 0;
     let isAdmin = localStorage.getItem('slava_admin') === 'true';
 
     window.onload = () => {
         setTimeout(() => {
             document.getElementById('intro').style.opacity = '0';
             document.getElementById('main-container').style.opacity = '1';
-            setTimeout(() => { 
-                document.body.classList.add('started'); 
-                init(); 
-            }, 600);
+            setTimeout(() => { document.body.classList.add('started'); init(); }, 600);
             setTimeout(() => document.getElementById('intro').style.display = 'none', 2000);
         }, 4000);
     };
@@ -137,20 +122,11 @@
     async function init() {
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([9.71, 99.98], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
-
         map.on('zoomend', () => document.getElementById('map').className = map.getZoom() >= 13 ? 'zoom-high' : '');
-
-        if(isAdmin) {
-            document.getElementById('admin-controls').style.display = 'flex';
-            document.getElementById('add-trigger').onclick = () => alert("Now tap anywhere on the map to place the spot");
-        }
+        if(isAdmin) document.getElementById('admin-controls').style.display = 'block';
 
         document.getElementById('adm-trigger').onclick = () => {
-            secret++;
-            if(secret >= 3) {
-                if(prompt("Pass:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); }
-                secret = 0;
-            }
+            secret++; if(secret >= 3) { if(prompt("Pass:") === "1234") { localStorage.setItem('slava_admin', 'true'); location.reload(); } secret = 0; }
         };
 
         await load();
@@ -160,41 +136,32 @@
     async function load() {
         const res = await fetch(`${SB_URL}/rest/v1/locations?select=*`, { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
         points = await res.json();
-        
-        // Ищем главную точку (is_main) или берем первую
-        const mainSpot = points.find(p => p.is_main) || points[0];
+        if(!points || points.length === 0) return;
+
+        // Если колонки is_main нет, points.find вернет undefined, и мы просто возьмем points[0]
+        const mainSpot = points.find(p => p.is_main === true) || points[0];
+        curIdx = points.indexOf(mainSpot);
 
         points.forEach((p, i) => {
             const sym = p.time === 'sunset' ? '🌅' : (p.time === 'sunrise' ? '🌄' : '☀️');
-            const icon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div class="marker-disk">${sym}</div><div class="marker-label">${p.name}</div>`,
-                iconSize: [30, 45]
-            });
+            const icon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-disk">${sym}</div><div class="marker-label">${p.name}</div>`, iconSize: [30, 45] });
             const m = L.marker(p.coords, { icon, draggable: isAdmin }).addTo(map);
-            m.on('click', (e) => { L.DomEvent.stopPropagation(e); loadPano(p); if(isAdmin) openAdmin(i); });
-            // Сохранение позиции после перетаскивания
-            m.on('dragend', async (e) => {
-                await fetch(`${SB_URL}/rest/v1/locations?id=eq.${p.id}`, {
-                    method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ coords: e.target.getLatLng() })
-                });
-            });
+            m.on('click', (e) => { L.DomEvent.stopPropagation(e); curIdx = i; loadPano(p); if(isAdmin) openAdmin(i); });
         });
-
-        if(mainSpot) loadPano(mainSpot);
+        loadPano(mainSpot);
     }
 
     function loadPano(p) {
         if(viewer) viewer.destroy();
         viewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": p.url, "autoLoad": true, "showZoomCtrl": false });
         document.getElementById('cur-spot-name').innerText = p.name;
-        document.getElementById('wa-container').innerHTML = p.wa ? `<a href="https://wa.me/${p.wa}" target="_blank" class="btn-add" style="display:inline-block; margin-top:10px; padding:8px 15px; font-size:12px; background:#25d366">WhatsApp</a>` : '';
+        document.getElementById('wa-container').innerHTML = p.wa ? `<a href="https://wa.me/${p.wa}" target="_blank" class="btn-add" style="display:inline-block; margin-top:10px; padding:8px 15px; font-size:11px; background:#25d366">WhatsApp</a>` : '';
     }
+
+    function navigate(dir) { curIdx = (curIdx + dir + points.length) % points.length; loadPano(points[curIdx]); }
 
     function openAdmin(idx) {
         document.getElementById('admin-panel').style.display = 'flex';
-        const del = document.getElementById('del-btn');
         if(idx !== null) {
             const p = points[idx];
             document.getElementById('edit-id').value = p.id;
@@ -203,32 +170,22 @@
             document.getElementById('in-wa').value = p.wa || '';
             document.getElementById('in-time').value = p.time || 'day';
             document.getElementById('in-main').checked = p.is_main || false;
-            del.style.display = 'block';
+            document.getElementById('del-btn').style.display = 'block';
         } else {
             document.getElementById('edit-id').value = '';
             document.querySelectorAll('#admin-panel input[type="text"]').forEach(i => i.value = '');
             document.getElementById('in-main').checked = false;
-            del.style.display = 'none';
+            document.getElementById('del-btn').style.display = 'none';
         }
     }
 
     async function save() {
         const id = document.getElementById('edit-id').value;
         const isMain = document.getElementById('in-main').checked;
-        const data = { 
-            name: document.getElementById('in-name').value, 
-            url: document.getElementById('in-url').value, 
-            wa: document.getElementById('in-wa').value, 
-            time: document.getElementById('in-time').value,
-            is_main: isMain
-        };
+        const data = { name: document.getElementById('in-name').value, url: document.getElementById('in-url').value, wa: document.getElementById('in-wa').value, time: document.getElementById('in-time').value, is_main: isMain };
 
-        // Если ставим текущую главной, снимаем флаг с остальных (логика в базе)
         if(isMain) {
-            await fetch(`${SB_URL}/rest/v1/locations?is_main=eq.true`, {
-                method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ is_main: false })
-            });
+            await fetch(`${SB_URL}/rest/v1/locations?is_main=eq.true`, { method: 'PATCH', headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ is_main: false }) });
         }
 
         if(id) {
